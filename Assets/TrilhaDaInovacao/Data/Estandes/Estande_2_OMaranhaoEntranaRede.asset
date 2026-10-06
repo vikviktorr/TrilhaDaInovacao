@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e85fd06f6724663e7abba79deda6041e, type: 3}
+  m_Name: Estande_2_OMaranhaoEntranaRede
+  m_EditorClassIdentifier: 
+  ordem: 2
+  periodo: "D\xE9cada de 1990"
+  titulo: "O Maranh\xE3o Entra na Rede"
+  nomeNpc: "Um dos primeiros usu\xE1rios de internet do estado"
+  papelNpc: "Acompanhou a chegada das redes acad\xEAmicas e dos primeiros provedores
+    comerciais."
+  falas:
+  - dublagem: {fileID: 0}
+    legenda: "Nos anos 90 o Maranh\xE3o entrou na rede. Primeiro pelas universidades,
+      depois pelos provedores."
+    duracaoSemAudio: 4.6200004
+  - dublagem: {fileID: 0}
+    legenda: "O som do modem discando virou a trilha sonora de uma gera\xE7\xE3o
+      inteira."
+    duracaoSemAudio: 4.29
+  - dublagem: {fileID: 0}
+    legenda: De repente, quem estava aqui podia conversar com o mundo todo.
+    duracaoSemAudio: 3.63
