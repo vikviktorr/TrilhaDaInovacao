@@ -1,99 +1,123 @@
-# Trilha da Inovação — A Feira Tecnológica do Maranhão
+# Trilha da Inovação — marcos tecnológicos do Maranhão (1986–2025)
 
-Experiência de Realidade Virtual para o desafio **Vitrine de Soluções do Sebrae**
-(tema integrador "Experiência Imersiva no Sebraelab").
+Experiência em realidade virtual para o Meta Quest 2, com rastreamento de mãos, no estande do Sebraelab (São Luís).
+O visitante caminha de verdade por seis marcas no piso. Em cada marca o mundo muda de época e mostra um marco da tecnologia maranhense.
 
-**Fofucho's Games Group** — Pedro Victor Santos Veloso, Gabriel Araujo Menezes,
-Kauã Carneiro de Morais, Davi Chaves de Oliveira, Lucas Gomes Antunes, Kalil Ramos.
-UNDB — Engenharia de Software · Tecnologias Emergentes.
+**Fofucho's Games Group**: Pedro Victor Santos Velôso, Davi Chaves de Oliveira, Gabriel Araujo Meneses,
+Kauã Carneiro de Morais, Lucas Gomes Antunes e Kalil Ramos Caldeira.
+Disciplina Tecnologias Emergentes, prof. Kassio Romulo Lima Souas.
 
-Este projeto implementa o escopo definido na P1 — Coleta de Dados.
+O projeto implementa o documento *Trilha da Inovação VR — Cenários e Roteiro de Produção*, derivado do Paper Check 1 (v3).
+O projeto da P1 (feira com estandes) continua no histórico do git, na tag `p1-feira-estandes`.
 
-## Ambiente
+## A visita (~4 min 45 s)
 
-| Item | Valor |
-| --- | --- |
-| Unity | 6000.0.83f1 (Unity 6 LTS) |
-| Render pipeline | URP 17 (perfil Mobile para o Quest 2) |
-| XR | OpenXR + XR Plug-in Management + XR Interaction Toolkit 3.6 |
-| Alvo | Meta Quest 2 (Android, ARM64, IL2CPP, Vulkan) |
-| Locomoção | Room-scale — caminhada física real, **sem teleporte** |
+| Cena | Marca | Ano | Marco | Gatilho do visitante |
+| --- | --- | --- | --- | --- |
+| 0 | Início | — | Abertura e calibração das mãos | Tocar "Começar" |
+| 1 | 1 | 1986 | Central Trópico-R da TELMA | Tocar o telefone |
+| 2 | 2 | 1994 | Campanha Guará, Alcântara | Pisar na marca do radar |
+| 3 | 3 | 2009 | Rede Metropolitana de São Luís (RNP) | Tocar o ponto no mapa |
+| 4 | 4 | 2018 | Laboratório Aberto do SENAI | Tocar a lâmpada |
+| 5 | 5 | 2022 | 5G em 3,5 GHz | Aproximar-se da torre |
+| 6 | 6 | 2023–2025 | HANBIT-TLV (SISNAV) e HANBIT-Nano (PION-BR2) | Assistir à decolagem |
+| 7 | 6 | — | Encerramento | Retirar o óculos |
 
-> ⚠️ **Falta o Android Build Support neste editor.** Hoje só o
-> LinuxStandaloneSupport está instalado, então o projeto roda em PC VR mas
-> ainda não builda para o Quest 2 — e as features OpenXR de Android
-> (Meta Quest Support) não chegam a ser criadas. Instale pelo Unity Hub:
-> *Installs → 6000.0.83f1 → Add modules → Android Build Support*
-> (com OpenJDK e Android SDK & NDK Tools) e rode o menu
-> **Trilha da Inovação → 1 · Configurar XR** de novo.
+Todo gatilho tem plano B: o guia repete a instrução em 6 s e a cena avança sozinha em 10 s.
 
-## Cenas (escopo: 3 cenas)
+## Mapa físico
 
-1. `01_BoasVindas_Tutorial` — hall de entrada; o NPC narrador explica o objetivo
-   em ~15 s e avisa que o deslocamento é caminhando de verdade pela sala.
-2. `02_Feira_TrilhaDaInovacao` — hub único com os 6 estandes cronológicos e o
-   Mural do Conhecimento. Sem carregamento entre estandes.
-3. `03_Encerramento_Creditos` — créditos com o convite para conhecer o
-   Sebraelab, e reinício automático para o próximo visitante da fila.
-
-## Pontos de interação (7, acima do mínimo de 5)
-
-6 NPCs dublados (um por estande) + o Mural do Conhecimento.
-
-## Sistema implementado
-
-**Diálogo com NPCs integrado a uma máquina de estados** — o contrato exigido
-pela avaliação:
+As marcas formam um U numa área livre de **5 × 4 m** (provisório, é preciso medir o Sebraelab).
+As coordenadas ficam em `Scripts/Runtime/LayoutTrilha.cs`, e é só ali que se muda o layout: a marca virtual, o gatilho e o cenário acompanham.
+O perímetro da área aparece fraco no chão em todas as épocas.
 
 ```
-Bloqueado ──(usuário se aproxima)──▶ Visitado ──(fala termina)──▶ Concluído
+ z  ┌──────────────────────────────────────┐
+ ▲  │ SAÍDA ◄─ 2025 ◄── 2022 ◄── 2018     │   linha de cima (olham para o sul)
+ │  │                              ▲       │
+ │  │        (centro do U: guia     │       │
+ │  │         e objetos de toque)   │       │
+ │  │ INÍCIO ─► 1986 ─► 1994 ─► 2009       │   linha de baixo (olham para o norte)
+    └──────────────────────────────────────┘ ─► x
 ```
-
-- `ProgressoExperiencia` guarda o estado dos estandes e emite os eventos.
-  Persiste entre cenas (`DontDestroyOnLoad`).
-- `NpcEstande` detecta a aproximação por distância (com histerese, para o NPC
-  não gaguejar na borda do raio), toca a dublagem espacializada e exibe a
-  legenda; ao terminar, marca o estande como concluído.
-- `MuralDoConhecimento` escuta esses eventos e acende o setor correspondente.
-- Quando o último setor acende, `CelebracaoFinal` dispara partículas e luz e,
-  ao fim, carrega os créditos.
 
 ## Estrutura
 
 ```
-Assets/TrilhaDaInovacao/
-├── Data/Estandes/      6 assets EstandeData (roteiro provisório por década)
-├── Audio/Narracao/     dublagens da equipe (a gravar)
-├── Materials/          materiais do whitebox
-└── Scripts/
-    ├── Runtime/        lógica da experiência
-    └── Editor/         configuração de XR e construtor de cenas
+Assets/
+├── Scenes/                 GERADAS pelo construtor (não editar à mão)
+│   ├── 00_Bootstrap        rig XR, mãos, guia, legenda, marcas, diretor da visita
+│   ├── 01_Hub              cenas 0 e 7
+│   └── 02…07_<época>       uma cena aditiva por época
+├── TextMesh Pro/           TMP Essential Resources
+└── TrilhaDaInovacao/
+    ├── Roteiro/            SceneScript por cena: falas = legendas (EDITÁVEIS)
+    ├── Modelos/Kenney/     modelos 3D CC0 usados nos cenários
+    ├── Gerado/             materiais, ícone e malhas gerados
+    └── Scripts/
+        ├── Runtime/        VisitDirector, FloorMarker, PokeTrigger, ProximityTrigger,
+        │   ├── Sequencias/ ScreenFader, SubtitleController, GuideCharacter, HandPoints,
+        │   └── Efeitos/    DesktopRig, XRStartup, SessionLogger, OperatorPanel…
+        └── Editor/         construtor de cenas, roteiro, XR, ícone, builds
+Ferramentas/                build, download de modelos, instaladores
 ```
 
-## Regerar o whitebox
+**Roteiro:** as falas ficam em `Assets/TrilhaDaInovacao/Roteiro/*.asset`. Edite o texto no Inspector e arraste a voz gravada para o campo `audio`.
+Sem áudio, a legenda fica na tela pelo tempo calculado (≈2,6 palavras/s).
+Regenerar as cenas não sobrescreve o texto revisado.
 
-No menu do editor: **Trilha da Inovação → 0 · Configurar tudo (XR + cenas)**.
+**Diferença em relação ao documento:** as sequências são coroutines (`Scripts/Runtime/Sequencias/`) e não Timelines.
+Assim dá para gerar tudo por código e mudar o roteiro sem tocar em assets binários.
 
-Isso reconfigura o OpenXR, recria os assets dos estandes e reconstrói as três
-cenas do zero. Também roda por linha de comando:
+## Modelos 3D
+
+| Fonte | Licença | Como entra no projeto |
+| --- | --- | --- |
+| [Kenney](https://kenney.nl/assets/category:3D): Furniture, Space, Nature, City Commercial, Factory, Mini Characters | CC0 (domínio público) | `Ferramentas/baixar-modelos.sh` baixa e copia só os FBX usados |
+| Sketchfab, TurboSquid, Fab | Varia por modelo (CC-BY exige crédito) | Exigem login; ver "Pendências" |
+
+Os objetos históricos específicos (bastidores Trópico-R, telefones, HANBIT, SISNAV, torre 5G) continuam modelados no código, como pede a lista de assets do documento.
+Ainda é preciso substituí-los por modelos feitos a partir de fotos.
+
+## Como gerar
+
+Com o Unity 6000.0.83f1 (módulos Linux, Windows e Android) e o editor **fechado**:
 
 ```bash
-~/Unity/Hub/Editor/6000.0.83f1/Editor/Unity -batchmode -nographics -quit \
-  -projectPath . -executeMethod TrilhaDaInovacao.EditorTools.PipelineDeSetup.Tudo
+Ferramentas/build.sh                 # gera as cenas + builds Linux, Windows e Quest
+Ferramentas/build.sh linux           # só um alvo
+Ferramentas/empacotar-rpm.sh         # dist/trilha-da-inovacao-<v>-1.x86_64.rpm (+ .tar.gz)
+Ferramentas/empacotar-windows.sh     # dist/TrilhaDaInovacao-Setup-<v>.exe (NSIS)
+Ferramentas/instalar-quest.sh        # adb install do APK no Quest 2 (Modo Desenvolvedor)
 ```
 
-> As cenas são **geradas**. Ao editar uma cena à mão, pare de rodar o construtor
-> ou passe as mudanças para `ConstrutorDeCenas.cs` — ele sobrescreve tudo.
+No editor: menu **Trilha da Inovação → 0 · Configurar tudo** e depois os itens **3 · Build**.
 
-## Antes da demonstração no Sebrae
+## Controles
 
-- [ ] **Medir a sala in loco.** O layout inteiro sai de `LarguraSala` e
-      `ProfundidadeSala` em `ConstrutorDeCenas.cs` (hoje 6 × 8 m, provisório).
-      A modelagem precisa ser 1:1 com o espaço físico.
-- [ ] Configurar o Guardian do Quest 2 com o perímetro real da sala.
-- [ ] Remover obstáculos físicos do caminho entre os estandes.
-- [ ] Marcar o percurso com fita no chão e testar com a equipe.
-- [ ] Gravar as dublagens e ligá-las em cada `EstandeData`; enquanto não
-      existem, a legenda usa `duracaoSemAudio` como cronômetro.
-- [ ] Revisar o roteiro definitivo dos 6 estandes.
-- [ ] Trocar o whitebox por assets low poly e bakear a iluminação.
+| Quem | Ação | Comando |
+| --- | --- | --- |
+| Visitante (Quest) | Tocar | Encostar a ponta do indicador (ou o controle) |
+| Visitante (Quest) | Andar | Caminhar de verdade até a marca que brilha |
+| Monitor | Calibrar o piso | De pé na marca INÍCIO, olhando para dentro do U: segurar **A** por 2 s (ou **C** no teclado). Fica salvo |
+| Monitor | Pular cena | Segurar **B** por 1 s (ou **N**) |
+| Monitor | Reiniciar visita | Segurar **Y** por 3 s (ou **R**) |
+| PC sem óculos (`-desktop`) | Andar / olhar / tocar | WASD · botão direito ou Tab · clique |
+
+O jogo abre em VR quando acha um runtime OpenXR (Quest Link, SteamVR, ALVR, Monado). Sem runtime, abre em modo desktop.
+
+## Testes da metodologia
+
+- Cada visita grava `sessoes.csv` (sessão, cena, duração, previsto, gatilho `visitante`/`auto`/`pulado`) em `persistentDataPath`.
+  No Quest: `/sdcard/Android/data/com.fofuchosgames.trilhadainovacao/files/`. No Linux: `~/.config/unity3d/Fofucho's Games Group/Trilha da Inovação/`.
+- `TrilhaDaInovacao.x86_64 -tour <pasta>` percorre a visita sozinho e salva screenshots dos momentos-chave.
+
+## Pendências (do documento)
+
+- [ ] Medir a área livre do Sebraelab e ajustar `LayoutTrilha` (hoje 5 × 4 m)
+- [ ] Nomes das seis instituições da Rede Metropolitana (RNP, 2009) para rotular os pinos
+- [ ] Valores e fonte da comparação 3G/4G/5G (hoje o painel é ilustrativo)
+- [ ] Gravar as falas do guia e definir o nome e o visual dele
+- [ ] Modelos de referência: central Trópico-R e foguetes HANBIT (Sketchfab/TurboSquid/Fab ou modelagem própria)
+- [ ] Bake de iluminação e medição a 72 Hz no OVR Metrics Tool
+- [ ] Testar com visitantes que nunca usaram VR

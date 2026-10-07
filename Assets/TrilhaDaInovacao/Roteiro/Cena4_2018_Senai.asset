@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81527ec83f7595731b84b8bf0187a569, type: 3}
+  m_Name: Cena4_2018_Senai
+  m_EditorClassIdentifier: 
+  titulo: "Laborat\xF3rio Aberto do SENAI"
+  ano: 2018
+  tempoPrevisto: 35
+  fonte: "SENAI inaugurou o Laborat\xF3rio Aberto em S\xE3o Lu\xEDs em 2 de mar\xE7o
+    de 2018 (FIEMA, 2018)."
+  falas:
+  - id: intro
+    texto: "2 de mar\xE7o de 2018. O SENAI inaugura seu primeiro Laborat\xF3rio Aberto
+      no Maranh\xE3o."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: juntos
+    texto: Estudantes, pesquisadores e empreendedores trabalham juntos aqui.
+    audio: {fileID: 0}
+    duracao: 0
+  - id: dica
+    texto: "Encoste a m\xE3o na l\xE2mpada sobre a bancada."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: ideia
+    texto: "Aqui, uma ideia pode ganhar forma de prot\xF3tipo."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: fim
+    texto: "Pronto! Agora, vamos acelerar a conex\xE3o da cidade."
+    audio: {fileID: 0}
+    duracao: 0

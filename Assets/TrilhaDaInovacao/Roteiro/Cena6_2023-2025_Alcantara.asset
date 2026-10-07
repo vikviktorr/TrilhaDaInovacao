@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81527ec83f7595731b84b8bf0187a569, type: 3}
+  m_Name: Cena6_2023-2025_Alcantara
+  m_EditorClassIdentifier: 
+  titulo: "Lan\xE7amentos em Alc\xE2ntara"
+  ano: 2023
+  tempoPrevisto: 60
+  fonte: "HANBIT-TLV (Innospace) levou o SISNAV em 2023 (AEB, 2024). HANBIT-Nano,
+    2025: primeiro lan\xE7amento comercial do Brasil, com o PION-BR2 (UFMA); anomalia
+    e perda da miss\xE3o (AEB, 2026)."
+  falas:
+  - id: intro2023
+    texto: "2023. O foguete HANBIT-TLV, da Innospace, sai de Alc\xE2ntara."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: sisnav
+    texto: "Dentro dele, o SISNAV, sistema brasileiro de navega\xE7\xE3o, foi levado
+      para testes."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: intro2025
+    texto: "2025. O HANBIT-Nano far\xE1 o primeiro lan\xE7amento comercial a partir
+      do Brasil."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: pion
+    texto: "Entre as cargas est\xE1 o PION-BR2, ligado \xE0 UFMA..."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: decolar
+    texto: Nossa, o foguete vai decolar agora!
+    audio: {fileID: 0}
+    duracao: 0
+  - id: contagem
+    texto: Five, four, three, two, one
+    audio: {fileID: 0}
+    duracao: 0
+  - id: resultado
+    texto: "O lan\xE7amento aconteceu, mas uma anomalia levou \xE0 perda da miss\xE3o.
+      O PION-BR2 n\xE3o chegou \xE0 \xF3rbita."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: reconstituicao
+    texto: "Reconstitui\xE7\xE3o feita para este projeto."
+    audio: {fileID: 0}
+    duracao: 0

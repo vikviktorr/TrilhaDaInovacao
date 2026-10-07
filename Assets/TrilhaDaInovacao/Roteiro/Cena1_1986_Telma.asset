@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81527ec83f7595731b84b8bf0187a569, type: 3}
+  m_Name: Cena1_1986_Telma
+  m_EditorClassIdentifier: 
+  titulo: "Central Tr\xF3pico-R da TELMA"
+  ano: 1986
+  tempoPrevisto: 35
+  fonte: "TELMA ativou a central Tr\xF3pico-R em S\xE3o Lu\xEDs em 1986, apontada
+    como a primeira central de comuta\xE7\xE3o totalmente digitalizada do Brasil
+    (HOLANDA, 1996)."
+  falas:
+  - id: intro
+    texto: "S\xE3o Lu\xEDs, 1986. A TELMA acaba de ativar a central Tr\xF3pico-R."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: primeira
+    texto: "Ela foi apontada como a primeira central de comuta\xE7\xE3o totalmente
+      digitalizada do Brasil."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: dica
+    texto: "Toque no telefone que est\xE1 brilhando."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: toque
+    texto: "Ao tocar neste telefone, voc\xEA v\xEA como a central encaminhava uma
+      liga\xE7\xE3o por sinais digitais."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: fim
+    texto: "Liga\xE7\xE3o completa! Agora vamos ao c\xE9u de Alc\xE2ntara."
+    audio: {fileID: 0}
+    duracao: 0

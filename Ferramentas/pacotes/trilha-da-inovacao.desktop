@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=Trilha da Inovação
+GenericName=Experiência em realidade virtual
+Comment=Marcos tecnológicos do Maranhão entre 1986 e 2025
+Exec=trilha-da-inovacao
+Icon=trilha-da-inovacao
+Terminal=false
+Categories=Game;Education;
+Keywords=VR;Maranhão;história;tecnologia;
+Actions=desktop;
+
+[Desktop Action desktop]
+Name=Jogar sem óculos (modo desktop)
+Exec=trilha-da-inovacao -desktop

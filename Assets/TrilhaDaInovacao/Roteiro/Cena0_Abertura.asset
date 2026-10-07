@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81527ec83f7595731b84b8bf0187a569, type: 3}
+  m_Name: Cena0_Abertura
+  m_EditorClassIdentifier: 
+  titulo: Abertura
+  ano: 
+  tempoPrevisto: 25
+  fonte: "Hub do Sebraelab: apresenta\xE7\xE3o do guia e calibra\xE7\xE3o das m\xE3os."
+  falas:
+  - id: ola
+    texto: "Ol\xE1! Bem-vindo \xE0 Trilha da Inova\xE7\xE3o."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: maos
+    texto: "Levante as m\xE3os. \xC9 com elas que voc\xEA vai tocar a hist\xF3ria."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: seis
+    texto: "Vamos visitar seis momentos em que o Maranh\xE3o fez hist\xF3ria na tecnologia."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: dica-comecar
+    texto: "Toque no bot\xE3o Come\xE7ar, \xE0 sua frente."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: siga
+    texto: "Siga a luz no ch\xE3o at\xE9 a primeira marca."
+    audio: {fileID: 0}
+    duracao: 0

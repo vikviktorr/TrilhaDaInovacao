@@ -6,14 +6,29 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/01_BoasVindas_Tutorial.unity
-    guid: 5a13bad48a0c5b780b561d9366a414f6
+    path: Assets/Scenes/00_Bootstrap.unity
+    guid: c3fb5ea2d07996c879e7fee46caf214d
   - enabled: 1
-    path: Assets/Scenes/02_Feira_TrilhaDaInovacao.unity
-    guid: 2fe948d5cc1b4a680aad217ee8439a5d
+    path: Assets/Scenes/01_Hub.unity
+    guid: e1114f09556942a9ab30cd79ac26b0b4
   - enabled: 1
-    path: Assets/Scenes/03_Encerramento_Creditos.unity
-    guid: 2acef441ee9837692ba0e1471af2b28d
+    path: Assets/Scenes/02_1986_Telma.unity
+    guid: 6c05e0e9769f51ad3978484b0a9e039c
+  - enabled: 1
+    path: Assets/Scenes/03_1994_Guara.unity
+    guid: 7bc9ea59c1814b686923ef167a213788
+  - enabled: 1
+    path: Assets/Scenes/04_2009_Fibra.unity
+    guid: 117941b4bd00f09bea46321dcdb6d894
+  - enabled: 1
+    path: Assets/Scenes/05_2018_Senai.unity
+    guid: 53fb0749ffe6d6e51ab0bcd127f8b93d
+  - enabled: 1
+    path: Assets/Scenes/06_2022_5G.unity
+    guid: 3e95b0029454d9ba18ba0a4e1f14c53f
+  - enabled: 1
+    path: Assets/Scenes/07_2025_Alcantara.unity
+    guid: ce020d6d6a86e718b84717f8d58d96ee
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 9e84975d6957447169ac8113d963956b, type: 2}

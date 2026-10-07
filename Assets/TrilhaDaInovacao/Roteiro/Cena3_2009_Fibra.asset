@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81527ec83f7595731b84b8bf0187a569, type: 3}
+  m_Name: Cena3_2009_Fibra
+  m_EditorClassIdentifier: 
+  titulo: "Rede Metropolitana de S\xE3o Lu\xEDs"
+  ano: 2009
+  tempoPrevisto: 35
+  fonte: "RNP: rede de fibra \xF3ptica de 43 km conectando seis institui\xE7\xF5es
+    a 1 Gbps (RNP, 2009). PENDENTE: nomes das seis institui\xE7\xF5es para rotular
+    os pinos."
+  falas:
+  - id: intro
+    texto: "S\xE3o Lu\xEDs, 2009. A RNP inaugura a Rede Metropolitana da cidade."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: numeros
+    texto: "S\xE3o 43 quil\xF4metros de fibra \xF3ptica ligando seis institui\xE7\xF5es
+      a 1 Gbps."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: dica
+    texto: Toque no ponto grande que pulsa no mapa.
+    audio: {fileID: 0}
+    duracao: 0
+  - id: veja
+    texto: "Veja os centros de pesquisa se conectarem pela fibra \xF3ptica."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: fim
+    texto: Com a rede pronta, as ideias circulam. Vamos ver uma delas virar objeto.
+    audio: {fileID: 0}
+    duracao: 0

@@ -39,3 +39,6 @@ Thumbs.db
 /dist/
 *.rpm
 *.AppImage
+
+# Pacotes de terceiros completos (baixados por Ferramentas/baixar-modelos.sh)
+/Terceiros/

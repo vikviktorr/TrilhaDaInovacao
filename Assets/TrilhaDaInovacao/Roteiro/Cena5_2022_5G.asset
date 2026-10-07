@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81527ec83f7595731b84b8bf0187a569, type: 3}
+  m_Name: Cena5_2022_5G
+  m_EditorClassIdentifier: 
+  titulo: "5G em S\xE3o Lu\xEDs"
+  ano: 2022
+  tempoPrevisto: 35
+  fonte: "Anatel autorizou esta\xE7\xF5es na faixa de 3,5 GHz em S\xE3o Lu\xEDs a
+    partir de 19 set. 2022 (ANATEL, 2022). PENDENTE: valores e fonte da compara\xE7\xE3o
+    3G/4G/5G."
+  falas:
+  - id: intro
+    texto: "S\xE3o Lu\xEDs, setembro de 2022. O 5G chega \xE0 cidade."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: dica
+    texto: Aproxime-se da torre.
+    audio: {fileID: 0}
+    duracao: 0
+  - id: anatel
+    texto: A Anatel liberou a faixa de 3,5 GHz a partir de 19 de setembro.
+    audio: {fileID: 0}
+    duracao: 0
+  - id: expansao
+    texto: "A nova faixa permitiu a expans\xE3o das redes m\xF3veis na cidade."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: fim
+    texto: "Agora, a \xFAltima parada: de volta a Alc\xE2ntara."
+    audio: {fileID: 0}
+    duracao: 0

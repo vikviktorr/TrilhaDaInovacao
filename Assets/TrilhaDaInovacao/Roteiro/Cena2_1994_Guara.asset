@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81527ec83f7595731b84b8bf0187a569, type: 3}
+  m_Name: Cena2_1994_Guara
+  m_EditorClassIdentifier: 
+  titulo: "Campanha Guar\xE1"
+  ano: 1994
+  tempoPrevisto: 35
+  fonte: "Campanha Guar\xE1 em Alc\xE2ntara: pesquisadores brasileiros e da NASA
+    estudaram a ionosfera com foguetes e instrumentos em terra (INPE, s. d.)."
+  falas:
+  - id: intro
+    texto: "Alc\xE2ntara, 1994. Aqui acontece a campanha Guar\xE1."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: pesquisadores
+    texto: "Pesquisadores do Brasil e dos Estados Unidos estudaram juntos essa regi\xE3o
+      da atmosfera."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: dica
+    texto: "D\xEA um passo at\xE9 a marca do radar no ch\xE3o."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: ionosfera
+    texto: Essa camada se chama ionosfera. Foguetes e instrumentos em terra a estudaram.
+    audio: {fileID: 0}
+    duracao: 0
+  - id: fim
+    texto: "O INPE e a NASA trabalharam juntos nessa miss\xE3o. Pr\xF3xima parada:
+      2009."
+    audio: {fileID: 0}
+    duracao: 0

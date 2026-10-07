@@ -13,13 +13,16 @@ namespace TrilhaDaInovacao.EditorTools
 {
     /// <summary>
     /// Liga o OpenXR (PC + Quest 2 via Android) e aplica as configurações de
-    /// player recomendadas na seção 9 do documento da P1.
+    /// player do guia de produção (Quest 2: Android, ARM64, IL2CPP, Linear).
     /// </summary>
     public static class ConfiguradorXR
     {
         const string PastaXR = "Assets/XR";
         const string CaminhoSettings = PastaXR + "/XRGeneralSettings.asset";
         const string LoaderOpenXR = "UnityEngine.XR.OpenXR.OpenXRLoader";
+
+        public const string Versao = "1.0.0";
+        public const int CodigoVersao = 1;
 
         [MenuItem("Trilha da Inovação/1 · Configurar XR (OpenXR + Quest 2)")]
         public static void Configurar()
@@ -86,7 +89,9 @@ namespace TrilhaDaInovacao.EditorTools
                 settings.Manager = manager;
             }
 
-            settings.InitManagerOnStart = true;
+            // No PC o XRStartup inicia o OpenXR à mão, para cair no modo
+            // desktop quando não há headset; no Quest o sistema já inicia.
+            settings.InitManagerOnStart = grupo == BuildTargetGroup.Android;
             XRPackageMetadataStore.AssignLoader(settings.Manager, LoaderOpenXR, grupo);
 
             AtivarFeaturesOpenXR(grupo);
@@ -110,6 +115,8 @@ namespace TrilhaDaInovacao.EditorTools
 
                 var querido =
                     tipo.Contains("OculusTouchControllerProfile") ||
+                    tipo.EndsWith("Hands.OpenXR.HandTracking") ||
+                    tipo.Contains("MetaHandTrackingAim") ||
                     (grupo == BuildTargetGroup.Android && tipo.Contains("MetaQuestFeature"));
 
                 if (querido) feature.enabled = true;
@@ -125,6 +132,15 @@ namespace TrilhaDaInovacao.EditorTools
         {
             PlayerSettings.companyName = "Fofucho's Games Group";
             PlayerSettings.productName = "Trilha da Inovação";
+            PlayerSettings.bundleVersion = Versao;
+            PlayerSettings.Android.bundleVersionCode = CodigoVersao;
+
+            // PC: janela redimensionável (modo desktop e apresentação).
+            PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+            PlayerSettings.defaultScreenWidth = 1600;
+            PlayerSettings.defaultScreenHeight = 900;
+            PlayerSettings.resizableWindow = true;
+            PlayerSettings.runInBackground = true;
 
             // Linear + Vulkan: recomendação de desempenho para o Quest 2 com URP.
             PlayerSettings.colorSpace = ColorSpace.Linear;
@@ -142,6 +158,8 @@ namespace TrilhaDaInovacao.EditorTools
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
 
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
+            // OpenXR no Quest com a entrada clássica (Activity).
+            PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
             PlayerSettings.SetApplicationIdentifier(
                 NamedBuildTarget.Android, "com.fofuchosgames.trilhadainovacao");
 

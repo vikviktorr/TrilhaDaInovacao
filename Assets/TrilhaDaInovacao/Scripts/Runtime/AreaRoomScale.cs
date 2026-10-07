@@ -3,7 +3,7 @@ using UnityEngine;
 namespace TrilhaDaInovacao
 {
     /// <summary>
-    /// Representa, em escala 1:1, a sala física do Sebrae cedida à equipe.
+    /// Representa, em escala 1:1, a área livre do Sebraelab (ver LayoutTrilha).
     /// A locomoção é o caminhar real do usuário — não há teleporte — então
     /// todo estande precisa caber dentro deste retângulo e o Guardian do
     /// Quest 2 deve ser configurado com o mesmo perímetro.
@@ -13,9 +13,9 @@ namespace TrilhaDaInovacao
     {
         [Header("Medidas reais da sala (metros)")]
         [SerializeField, Min(1f), Tooltip("PROVISÓRIO: medir in loco antes de fechar o layout.")]
-        float largura = 6f;
+        float largura = LayoutTrilha.LarguraSala;
         [SerializeField, Min(1f)]
-        float profundidade = 8f;
+        float profundidade = LayoutTrilha.ProfundidadeSala;
 
         [Header("Folga de segurança")]
         [SerializeField, Min(0f), Tooltip("Faixa junto à parede que deve ficar livre de estandes.")]

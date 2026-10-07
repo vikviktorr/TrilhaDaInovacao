@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81527ec83f7595731b84b8bf0187a569, type: 3}
+  m_Name: Cena7_Encerramento
+  m_EditorClassIdentifier: 
+  titulo: Encerramento
+  ano: 
+  tempoPrevisto: 25
+  fonte: "Volta ao hub com a linha do tempo completa e cr\xE9ditos."
+  falas:
+  - id: historia
+    texto: "De uma central telef\xF4nica a foguetes, essa hist\xF3ria tamb\xE9m aconteceu
+      no Maranh\xE3o."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: obrigado
+    texto: "Obrigado por percorrer a Trilha da Inova\xE7\xE3o!"
+    audio: {fileID: 0}
+    duracao: 0
+  - id: retirar
+    texto: "Voc\xEA j\xE1 pode retirar o \xF3culos."
+    audio: {fileID: 0}
+    duracao: 0
