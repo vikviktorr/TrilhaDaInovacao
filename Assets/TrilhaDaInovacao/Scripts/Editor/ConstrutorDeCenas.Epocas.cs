@@ -773,7 +773,7 @@ namespace TrilhaDaInovacao.EditorTools
 
             var fogoMat = Particula("Fogo", true);
             var fumacaMat = Particula("Fumaca", false);
-            var fogo = Particulas("Fogo", hanbit, new Vector3(0f, -0.1f, 0f), fogoMat, 0.45f, 14f, 1.8f, 140f, new Color(1f, 0.6f, 0.2f), 12f);
+            var fogo = Particulas("Fogo", hanbit, new Vector3(0f, -0.1f, 0f), fogoMat, 0.5f, 14f, 2.6f, 220f, new Color(1f, 0.65f, 0.25f), 12f);
             fogo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             var rastro = Particulas("Rastro", hanbit, new Vector3(0f, -0.5f, 0f), fumacaMat, 6f, 1f, 3f, 45f, new Color(0.9f, 0.9f, 0.9f, 0.7f), 8f);
             rastro.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);

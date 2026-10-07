@@ -28,6 +28,7 @@ namespace TrilhaDaInovacao.EditorTools
 
         static readonly Dictionary<string, Material> materiais = new Dictionary<string, Material>();
         static Texture2D texturaBrilho;
+        static Texture2D texturaFumaca;
         static Dictionary<string, SceneScript> roteiros;
 
         [MenuItem("Trilha da Inovação/2 · Construir cenas")]
@@ -37,7 +38,8 @@ namespace TrilhaDaInovacao.EditorTools
             Directory.CreateDirectory(PastaMateriais);
             materiais.Clear();
 
-            texturaBrilho = GerarTexturaBrilho();
+            texturaBrilho = GerarTexturaRedonda("Brilho", true);
+            texturaFumaca = GerarTexturaRedonda("Fumaca", false);
             roteiros = Roteiro.CriarOuAtualizar();
 
             var caminhos = new List<string>
@@ -690,7 +692,8 @@ namespace TrilhaDaInovacao.EditorTools
         {
             if (materiais.TryGetValue(nome, out var pronto)) return pronto;
             var m = ObterMaterial(nome, "Universal Render Pipeline/Particles/Unlit");
-            m.SetTexture("_BaseMap", texturaBrilho);
+            // Aditivo: textura com RGB caindo a zero. Alfa: RGB branco, só o alfa cai.
+            m.SetTexture("_BaseMap", aditivo ? texturaBrilho : texturaFumaca);
             m.SetColor("_BaseColor", cor ?? Color.white);
             ConfigurarTransparencia(m, aditivo);
             m.SetFloat("_Blend", aditivo ? 2f : 0f);
@@ -715,7 +718,7 @@ namespace TrilhaDaInovacao.EditorTools
         {
             m.SetFloat("_Surface", 1f);
             m.SetFloat("_ZWrite", 0f);
-            m.SetFloat("_SrcBlend", (float)(aditivo ? BlendMode.One : BlendMode.SrcAlpha));
+            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
             m.SetFloat("_DstBlend", (float)(aditivo ? BlendMode.One : BlendMode.OneMinusSrcAlpha));
             m.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
             m.SetFloat("_DstBlendAlpha", (float)BlendMode.OneMinusSrcAlpha);
@@ -749,10 +752,10 @@ namespace TrilhaDaInovacao.EditorTools
             return m;
         }
 
-        /// <summary>Textura de brilho redondo (partículas, feixes, marcas).</summary>
-        static Texture2D GerarTexturaBrilho()
+        /// <summary>Textura redonda e suave para partículas (brilho aditivo ou fumaça).</summary>
+        static Texture2D GerarTexturaRedonda(string nome, bool premultiplicada)
         {
-            const string caminho = PastaGerado + "/Brilho.png";
+            var caminho = $"{PastaGerado}/{nome}.png";
             if (!File.Exists(caminho))
             {
                 const int n = 128;
@@ -762,7 +765,9 @@ namespace TrilhaDaInovacao.EditorTools
                 {
                     var d = Vector2.Distance(new Vector2(x, y), new Vector2(n / 2f, n / 2f)) / (n / 2f);
                     var a = Mathf.Clamp01(1f - d);
-                    tex.SetPixel(x, y, new Color(1f, 1f, 1f, a * a));
+                    // RGB também cai para zero: funciona em blend aditivo e alfa.
+                    var k = a * a;
+                    tex.SetPixel(x, y, premultiplicada ? new Color(k, k, k, k) : new Color(1f, 1f, 1f, k));
                 }
 
                 File.WriteAllBytes(caminho, tex.EncodeToPNG());

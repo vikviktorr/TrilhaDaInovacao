@@ -226,7 +226,7 @@ namespace TrilhaDaInovacao.EditorTools
         static void CidadeKenney(Transform q, float abaixo)
         {
             var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(PastaModelos + "Kenney/city-kit-commercial/Textures/variation-a.png");
-            var noturno = Opaco("2022CidadeKenney", new Color(0.35f, 0.38f, 0.5f), new Color(0.55f, 0.48f, 0.3f));
+            var noturno = Opaco("2022CidadeKenney", new Color(0.22f, 0.24f, 0.34f), new Color(0.22f, 0.18f, 0.1f));
             if (tex != null)
             {
                 noturno.SetTexture("_BaseMap", tex);

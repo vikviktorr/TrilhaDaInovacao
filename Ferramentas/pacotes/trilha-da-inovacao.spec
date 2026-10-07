@@ -37,3 +37,7 @@ install -Dm644 %{_sourcedir}/%{name}.desktop %{buildroot}%{_datadir}/application
 %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/512x512/apps/%{name}.png
+
+%changelog
+* Tue Oct 06 2026 Fofucho's Games Group - 1.0.0-1
+- Primeira versão: seis épocas, modo VR (OpenXR) e modo desktop.

@@ -57,6 +57,12 @@ namespace TrilhaDaInovacao.EditorTools
         public static void BuildQuest()
         {
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+
+            // Máquinas com pouca RAM (8 GB): o IL2CPP é morto por falta de memória
+            // gerando código em paralelo. Menos código e um job por vez cabem.
+            PlayerSettings.SetIl2CppCodeGeneration(NamedBuildTarget.Android, Il2CppCodeGeneration.OptimizeSize);
+            PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Android, ManagedStrippingLevel.Medium);
+            PlayerSettings.SetAdditionalIl2CppArgs("--jobs=1");
             EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem.Gradle;
             Gerar(BuildTarget.Android, $"{PastaBuilds}/Android/TrilhaDaInovacao.apk");
         }

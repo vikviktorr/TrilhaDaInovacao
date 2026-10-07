@@ -11,12 +11,12 @@ VERSAO=$(grep -oP 'Versao = "\K[^"]+' Assets/TrilhaDaInovacao/Scripts/Editor/Con
 TOPO=$PWD/dist/rpmbuild
 rm -rf "$TOPO" && mkdir -p "$TOPO"/{SOURCES,SPECS,BUILD,RPMS,SRPMS}
 cp -a Builds/Linux "$TOPO/SOURCES/Linux"
-rm -rf "$TOPO/SOURCES/Linux/TrilhaDaInovacao_BurstDebugInformation_DoNotShip"
+rm -rf "$TOPO"/SOURCES/Linux/*DoNotShip*
 cp Ferramentas/icone.png "$TOPO/SOURCES/"
 cp Ferramentas/pacotes/trilha-da-inovacao.desktop "$TOPO/SOURCES/"
 cp Ferramentas/pacotes/trilha-da-inovacao.spec "$TOPO/SPECS/"
 
 rpmbuild --define "_topdir $TOPO" --define "versao $VERSAO" -bb "$TOPO/SPECS/trilha-da-inovacao.spec"
 cp "$TOPO"/RPMS/x86_64/*.rpm dist/
-tar -C Builds -czf "dist/trilha-da-inovacao-$VERSAO-linux-x86_64.tar.gz" Linux --exclude='*DoNotShip*'
+tar -C Builds --exclude="*DoNotShip*" -czf "dist/trilha-da-inovacao-$VERSAO-linux-x86_64.tar.gz" Linux
 ls -lh dist/*.rpm dist/*.tar.gz
