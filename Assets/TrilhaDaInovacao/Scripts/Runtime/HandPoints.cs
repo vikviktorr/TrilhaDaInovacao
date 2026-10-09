@@ -39,6 +39,9 @@ namespace TrilhaDaInovacao
 
         public bool Ativo { get; set; } = true;
 
+        /// <summary>QA: ponta de dedo simulada (visitante virtual), somada às reais.</summary>
+        public static Vector3? PontoSimulado { get; set; }
+
         void Awake()
         {
             Instancia = this;
@@ -105,6 +108,8 @@ namespace TrilhaDaInovacao
         {
             pontas.Clear();
             MaosVisiveis = false;
+
+            if (PontoSimulado.HasValue) pontas.Add(PontoSimulado.Value);
 
             if (!Ativo || !XRStartup.XRAtivo)
             {

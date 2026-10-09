@@ -64,6 +64,15 @@ namespace TrilhaDaInovacao
             if (texto != null) texto.text = legenda ?? string.Empty;
             if (texto != null) texto.gameObject.SetActive(visivel);
             if (fundo != null) fundo.SetActive(visivel);
+
+            if (visivel && QARelatorio.Instancia != null && texto != null)
+            {
+                texto.ForceMeshUpdate();
+                if (texto.textInfo.lineCount > 2)
+                    QARelatorio.Instancia.Problema($"Legenda com {texto.textInfo.lineCount} linhas: \"{legenda}\"");
+                if (texto.isTextOverflowing)
+                    QARelatorio.Instancia.Problema($"Legenda transborda o painel: \"{legenda}\"");
+            }
         }
 
         public void Ocultar() => Definir(string.Empty);

@@ -615,6 +615,7 @@ namespace TrilhaDaInovacao.EditorTools
 
         static string Salvar(UnityEngine.SceneManagement.Scene cena, string nome)
         {
+            if (nome != LayoutTrilha.CenaBootstrap) MesclarEstaticos(cena, nome);
             var caminho = $"{PastaCenas}/{nome}.unity";
             EditorSceneManager.SaveScene(cena, caminho);
             return caminho;

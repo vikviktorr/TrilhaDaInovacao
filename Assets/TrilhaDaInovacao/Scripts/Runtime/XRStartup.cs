@@ -45,7 +45,7 @@ namespace TrilhaDaInovacao
                 yield break;
             }
 
-            if (TemArgumento("-desktop") || TemArgumento("-tour"))
+            if (TemArgumento("-desktop") || TemArgumento("-tour") || TemArgumento("-qa"))
             {
                 Concluir(false, "argumento de linha de comando");
                 yield break;

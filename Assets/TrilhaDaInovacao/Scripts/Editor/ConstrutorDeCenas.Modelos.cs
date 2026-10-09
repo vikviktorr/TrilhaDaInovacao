@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -34,6 +36,8 @@ namespace TrilhaDaInovacao.EditorTools
             }
 
             var go = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+            // Objeto comum (não instância de prefab): o construtor pode mesclá-lo depois.
+            PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
             go.transform.SetParent(pai, false);
             go.transform.localPosition = Vector3.zero;
             go.transform.localRotation = Quaternion.Euler(0f, giroY, 0f);
@@ -88,6 +92,179 @@ namespace TrilhaDaInovacao.EditorTools
             }
 
             return b;
+        }
+
+        /// <summary>
+        /// Personagens Kenney vêm em pose T; com importação Legacy o FBX traz as
+        /// animações (idle, walk, interact-right, emote-yes...) e tocamos uma em loop.
+        /// </summary>
+        static void Animar(GameObject go, string clipe)
+        {
+            if (go == null) return;
+            var anim = go.GetComponent<Animation>();
+            if (anim == null || anim.GetClip(clipe) == null)
+            {
+                Debug.LogWarning($"[Trilha da Inovação] Animação '{clipe}' não encontrada em {go.name}.");
+                return;
+            }
+
+            anim.clip = anim.GetClip(clipe);
+            anim.playAutomatically = true;
+            anim.wrapMode = WrapMode.Loop;
+            anim.cullingType = AnimationCullingType.BasedOnRenderers;
+        }
+
+        /// <summary>Junta várias peças de mesmo material numa malha só (menos draw calls).</summary>
+        static Renderer Combinar(string nome, Transform pai, List<GameObject> partes, Material material)
+        {
+            var combinar = new List<CombineInstance>();
+            foreach (var p in partes)
+            {
+                combinar.Add(new CombineInstance
+                {
+                    mesh = p.GetComponent<MeshFilter>().sharedMesh,
+                    transform = pai.worldToLocalMatrix * p.transform.localToWorldMatrix
+                });
+            }
+
+            var malha = new Mesh { name = nome };
+            malha.CombineMeshes(combinar.ToArray(), true, true);
+            foreach (var p in partes) Object.DestroyImmediate(p);
+
+            var go = new GameObject(nome);
+            go.transform.SetParent(pai, false);
+            go.AddComponent<MeshFilter>().sharedMesh = malha;
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = material;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            return r;
+        }
+
+        /// <summary>
+        /// Mescla tudo que nunca se move numa malha por material, para caber no
+        /// orçamento de draw calls do Quest 2. Fica de fora (continua separado):
+        /// o que tem componente animado no caminho até a raiz, Transforms e
+        /// Renderers referenciados por scripts (movidos, escalados ou com cor
+        /// alterada). Objetos ligados/desligados por uma sequência (campos
+        /// GameObject) são mesclados dentro do próprio grupo, que continua
+        /// podendo ser escondido.
+        /// </summary>
+        static void MesclarEstaticos(UnityEngine.SceneManagement.Scene cena, string nomeCena)
+        {
+            var dinamicos = new HashSet<Transform>();
+            var grupos = new HashSet<Transform>();
+            var raizes = cena.GetRootGameObjects();
+
+            foreach (var comp in raizes.SelectMany(r => r.GetComponentsInChildren<Component>(true)))
+            {
+                if (comp == null) continue;
+                if (comp is MonoBehaviour || comp is ParticleSystem || comp is Light || comp is Animation ||
+                    comp is SkinnedMeshRenderer || comp is LineRenderer || comp is TrailRenderer || comp is AudioSource)
+                {
+                    dinamicos.Add(comp.transform);
+                }
+
+                if (!(comp is MonoBehaviour)) continue;
+                var prop = new SerializedObject(comp).GetIterator();
+                while (prop.NextVisible(true))
+                {
+                    if (prop.propertyType != SerializedPropertyType.ObjectReference) continue;
+                    switch (prop.objectReferenceValue)
+                    {
+                        case GameObject go: grupos.Add(go.transform); break;
+                        case Transform t: dinamicos.Add(t); break;
+                        case Component c: dinamicos.Add(c.transform); break;
+                    }
+                }
+            }
+
+            // Agrupa por (grupo que liga/desliga, material equivalente). Cada FBX da
+            // Kenney traz cópias próprias de materiais iguais; a chave os unifica.
+            var lotes = new Dictionary<(Transform, string), List<CombineInstance>>();
+            var representante = new Dictionary<string, Material>();
+            var mesclados = new List<MeshRenderer>();
+            foreach (var r in raizes.SelectMany(o => o.GetComponentsInChildren<MeshRenderer>(true)))
+            {
+                var filtro = r.GetComponent<MeshFilter>();
+                if (filtro == null || filtro.sharedMesh == null || !r.gameObject.activeInHierarchy && !DentroDeGrupo(r.transform, grupos)) continue;
+
+                Transform grupo = null;
+                var podeMesclar = true;
+                for (var t = r.transform; t != null; t = t.parent)
+                {
+                    if (dinamicos.Contains(t)) { podeMesclar = false; break; }
+                    if (grupo == null && grupos.Contains(t)) grupo = t;
+                }
+
+                if (!podeMesclar) continue;
+                var malha = filtro.sharedMesh;
+                var mats = r.sharedMaterials;
+                for (var i = 0; i < malha.subMeshCount && i < mats.Length; i++)
+                {
+                    if (mats[i] == null) continue;
+                    var id = ChaveMaterial(mats[i]);
+                    if (!representante.ContainsKey(id)) representante[id] = mats[i];
+                    var chave = (grupo, id);
+                    if (!lotes.TryGetValue(chave, out var lista)) lotes[chave] = lista = new List<CombineInstance>();
+                    var paraGrupo = grupo != null ? grupo.worldToLocalMatrix : Matrix4x4.identity;
+                    lista.Add(new CombineInstance { mesh = malha, subMeshIndex = i, transform = paraGrupo * r.transform.localToWorldMatrix });
+                }
+
+                mesclados.Add(r);
+            }
+
+            var pasta = $"{PastaGerado}/Malhas";
+            System.IO.Directory.CreateDirectory(pasta);
+            var raizMescla = new GameObject("Geometria estática (mesclada)").transform;
+            var n = 0;
+            foreach (var lote in lotes)
+            {
+                var (grupo, id) = lote.Key;
+                var material = representante[id];
+                var malha = new Mesh { name = $"{nomeCena} {material.name}", indexFormat = IndexFormat.UInt32 };
+                malha.CombineMeshes(lote.Value.ToArray(), true, true);
+                malha.RecalculateBounds();
+                var caminho = $"{pasta}/{nomeCena}_{n++:000}.asset";
+                AssetDatabase.DeleteAsset(caminho);
+                AssetDatabase.CreateAsset(malha, caminho);
+
+                var go = new GameObject($"Mescla · {material.name}");
+                go.transform.SetParent(grupo != null ? grupo : raizMescla, false);
+                go.AddComponent<MeshFilter>().sharedMesh = malha;
+                var mr = go.AddComponent<MeshRenderer>();
+                mr.sharedMaterial = material;
+                mr.shadowCastingMode = ShadowCastingMode.Off;
+                // Sem static batching: a malha já é única e precisa continuar
+                // legível no build (o QA testa o corredor pelos vértices).
+            }
+
+            // Remove os originais (e pais que ficaram vazios, como instâncias de modelos).
+            foreach (var r in mesclados)
+            {
+                if (r == null) continue;
+                var go = r.gameObject;
+                Object.DestroyImmediate(r.GetComponent<MeshFilter>());
+                Object.DestroyImmediate(r);
+                if (go.transform.childCount == 0 && go.GetComponents<Component>().Length == 1) Object.DestroyImmediate(go);
+            }
+
+            Debug.Log($"[Trilha da Inovação] {nomeCena}: {mesclados.Count} renderers estáticos mesclados em {lotes.Count} malhas.");
+        }
+
+        static string ChaveMaterial(Material m)
+        {
+            Color Cor(string p) => m.HasProperty(p) ? m.GetColor(p) : Color.clear;
+            var tex = m.HasProperty("_BaseMap") && m.GetTexture("_BaseMap") != null ? AssetDatabase.GetAssetPath(m.GetTexture("_BaseMap")) : "-";
+            var emissao = m.IsKeywordEnabled("_EMISSION") ? ColorUtility.ToHtmlStringRGB(Cor("_EmissionColor")) : "0";
+            var liso = m.HasProperty("_Smoothness") ? Mathf.Round(m.GetFloat("_Smoothness") * 10f) : 0f;
+            var superficie = m.HasProperty("_Surface") ? m.GetFloat("_Surface") : 0f;
+            return $"{m.shader.name}|{tex}|{ColorUtility.ToHtmlStringRGBA(Cor("_BaseColor"))}|{emissao}|{liso}|{superficie}";
+        }
+
+        static bool DentroDeGrupo(Transform t, HashSet<Transform> grupos)
+        {
+            for (; t != null; t = t.parent) if (grupos.Contains(t)) return true;
+            return false;
         }
 
         static void TrocarMateriais(GameObject go, Material material)
@@ -169,7 +346,7 @@ namespace TrilhaDaInovacao.EditorTools
             // Antenas extras do campo de lançamento, ao fundo.
             Modelo("Kenney/space-kit/satelliteDish_detailed", q, new Vector3(6f, 0f, 9f), -140f, 3.2f);
             Modelo("Kenney/space-kit/satelliteDish_detailed", q, new Vector3(-9f, 0f, 7f), 150f, 2.6f);
-            Modelo("Kenney/space-kit/desk_chair", q, new Vector3(-1.5f, 0f, 1.15f), 180f, 0.95f);
+            Modelo("Kenney/space-kit/desk_chair", q, new Vector3(-1.7f, 0f, 1.45f), 180f, 0.95f);
         }
 
         // ------------------------------------------------------------------
@@ -201,9 +378,9 @@ namespace TrilhaDaInovacao.EditorTools
         {
             const string f = "Kenney/furniture-kit/";
             const string c = "Kenney/mini-characters/";
-            Modelo(c + "character-female-a", q, new Vector3(-1.9f, 0f, 3.2f), 160f, 1.62f);
-            Modelo(c + "character-male-b", q, new Vector3(1.6f, 0f, 2.75f), -150f, 1.72f);
-            Modelo(c + "character-female-c", q, new Vector3(-2.3f, 0f, 1.4f), 100f, 1.6f);
+            Animar(Modelo(c + "character-female-a", q, new Vector3(-1.9f, 0f, 3.2f), 160f, 1.62f), "interact-right");
+            Animar(Modelo(c + "character-male-b", q, new Vector3(1.6f, 0f, 2.75f), -150f, 1.72f), "idle");
+            Animar(Modelo(c + "character-female-c", q, new Vector3(-2.3f, 0f, 1.4f), 100f, 1.6f), "emote-yes");
 
             Modelo(f + "desk", q, new Vector3(-2.3f, 0f, 0.3f), 90f, 1.2f, Medida.Profundidade);
             Modelo(f + "laptop", q, new Vector3(-2.3f, 0.76f, 0.3f), 90f, 0.32f, Medida.Largura);
@@ -217,7 +394,6 @@ namespace TrilhaDaInovacao.EditorTools
             // Bancada secundária com braço robótico.
             Bloco("Bancada do robô", q, new Vector3(2.4f, 0.4f, 1.2f), new Vector3(0.7f, 0.8f, 1.2f), Opaco("2018Bancada", Color.white));
             Modelo("Kenney/factory-kit/robot-arm-a", q, new Vector3(2.4f, 0.8f, 1.2f), -90f, 0.75f);
-            Modelo("Kenney/factory-kit/screen-panel-wide", q, new Vector3(-0.2f, 1.9f, 3.9f), 180f, 1.4f, Medida.Largura);
         }
 
         // ------------------------------------------------------------------
@@ -245,10 +421,10 @@ namespace TrilhaDaInovacao.EditorTools
             var raiz = new GameObject("Cidade (City Kit)").transform;
             raiz.SetParent(q, false);
             var rng = new System.Random(2022);
-            for (var i = 0; i < 170; i++)
+            for (var i = 0; i < 110; i++)
             {
                 var a = (float)rng.NextDouble() * Mathf.PI * 2f;
-                var r = 14f + (float)rng.NextDouble() * 105f;
+                var r = 22f + (float)rng.NextDouble() * 95f;
                 var nome = predios[rng.Next(predios.Length)];
                 var arranha = nome.Contains("skyscraper");
                 var go = Modelo("Kenney/city-kit-commercial/" + nome, raiz,
@@ -264,13 +440,12 @@ namespace TrilhaDaInovacao.EditorTools
         static void Decorar2023(Transform parteA)
         {
             const string s = "Kenney/space-kit/";
-            Modelo(s + "machine_generatorLarge", parteA, new Vector3(2.6f, 0f, 3.6f), -90f, 1.8f);
-            Modelo(s + "machine_generator", parteA, new Vector3(-2.7f, 0f, 3.8f), 90f, 1.2f);
-            Modelo(s + "barrels", parteA, new Vector3(3.2f, 0f, 0.9f), 0f, 0.9f);
+            // Medidos pelo maior lado: o gerador grande da Kenney é largo e tampava o foguete.
+            Modelo(s + "machine_generatorLarge", parteA, new Vector3(3.1f, 0f, 4.4f), -90f, 1.6f, Medida.MaiorLado);
+            Modelo(s + "machine_generator", parteA, new Vector3(-3.1f, 0f, 4.4f), 90f, 1.1f, Medida.MaiorLado);
+            Modelo(s + "barrels", parteA, new Vector3(3.3f, 0f, 1.2f), 0f, 0.8f, Medida.MaiorLado);
             Modelo(s + "desk_computer", parteA, new Vector3(-2.6f, 0f, 1.1f), 90f, 1.1f, Medida.Largura);
             Modelo(s + "desk_chair", parteA, new Vector3(-2.05f, 0f, 1.1f), -90f, 0.95f);
-            Modelo(s + "supports_high", parteA, new Vector3(1.4f, 0f, 1.9f), 0f, 4.5f);
-            Modelo(s + "supports_high", parteA, new Vector3(-1.4f, 0f, 1.9f), 180f, 4.5f);
         }
 
         static void Decorar2025(Transform parteB, Vector3 plataforma)

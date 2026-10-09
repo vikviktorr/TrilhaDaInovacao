@@ -23,6 +23,14 @@ namespace TrilhaDaInovacao.EditorTools
             "Cena4_2018_Senai", "Cena5_2022_5G", "Cena6_2023-2025_Alcantara", "Cena7_Encerramento"
         };
 
+        /// <summary>Correções vindas do QA (id, texto antigo, texto novo).</summary>
+        static readonly (string, string, string)[] Revisoes =
+        {
+            ("resultado",
+                "O lançamento aconteceu, mas uma anomalia levou à perda da missão. O PION-BR2 não chegou à órbita.",
+                "O lançamento aconteceu, mas uma anomalia levou à perda da missão.")
+        };
+
         public static Dictionary<string, SceneScript> CriarOuAtualizar()
         {
             Directory.CreateDirectory(Pasta);
@@ -107,7 +115,8 @@ namespace TrilhaDaInovacao.EditorTools
                         ("pion", "Entre as cargas está o PION-BR2, ligado à UFMA..."),
                         ("decolar", "Nossa, o foguete vai decolar agora!"),
                         ("contagem", "Five, four, three, two, one"),
-                        ("resultado", "O lançamento aconteceu, mas uma anomalia levou à perda da missão. O PION-BR2 não chegou à órbita."),
+                        ("resultado", "O lançamento aconteceu, mas uma anomalia levou à perda da missão."),
+                        ("resultado2", "O PION-BR2 não chegou à órbita."),
                         ("reconstituicao", "Reconstituição feita para este projeto.")
                     }),
 
@@ -143,6 +152,13 @@ namespace TrilhaDaInovacao.EditorTools
             foreach (var (id, texto) in falas)
             {
                 if (!roteiro.Contem(id)) roteiro.falas.Add(new Fala { id = id, texto = texto });
+            }
+
+            // Revisões do roteiro: só troca se o texto ainda for o original gerado.
+            foreach (var (id, antigo, novo) in Revisoes)
+            {
+                var fala = roteiro.falas.Find(f => f.id == id);
+                if (fala != null && fala.texto == antigo) fala.texto = novo;
             }
 
             EditorUtility.SetDirty(roteiro);

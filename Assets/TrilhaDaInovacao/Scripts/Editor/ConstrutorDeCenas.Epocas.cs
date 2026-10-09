@@ -42,16 +42,25 @@ namespace TrilhaDaInovacao.EditorTools
             {
                 var x = -1.6f + i * 0.8f;
                 var rack = Bloco($"Bastidor {i + 1}", q, new Vector3(x, 1f, 2.3f), new Vector3(0.6f, 2f, 0.5f), rackMat);
-                var leds = new List<Renderer>();
+                var grupos = new[] { new List<GameObject>(), new List<GameObject>() };
                 for (var c = 0; c < 3; c++)
                 for (var l = 0; l < 8; l++)
                 {
-                    leds.Add(Bloco($"LED {c}-{l}", q, new Vector3(x - 0.15f + c * 0.15f, 0.7f + l * 0.16f, 2.045f),
-                        new Vector3(0.05f, 0.03f, 0.01f), ledMat).GetComponent<Renderer>());
+                    grupos[(c + l) % 2].Add(Bloco($"LED {c}-{l}", q, new Vector3(x - 0.15f + c * 0.15f, 0.7f + l * 0.16f, 2.045f),
+                        new Vector3(0.05f, 0.03f, 0.01f), ledMat));
                 }
 
-                var pisca = rack.AddComponent<PiscaLeds>();
-                pisca.leds = leds.ToArray();
+                // Cada grupo vira uma malha só (2 draw calls por bastidor em vez de 24).
+                // O controle fica num objeto à parte para o bastidor poder ser mesclado.
+                var controle = new GameObject($"Controle dos LEDs {i + 1}");
+                controle.transform.SetParent(q, false);
+                controle.transform.localPosition = rack.transform.localPosition;
+                var pisca = controle.AddComponent<PiscaLeds>();
+                pisca.leds = new[]
+                {
+                    Combinar($"LEDs {i + 1}A", q, grupos[0], ledMat),
+                    Combinar($"LEDs {i + 1}B", q, grupos[1], ledMat)
+                };
                 bastidores.Add(pisca);
             }
 
@@ -185,22 +194,23 @@ namespace TrilhaDaInovacao.EditorTools
             // Antena do radar com o feixe que varre o céu.
             var antenaBase = new GameObject("Radar").transform;
             antenaBase.SetParent(q, false);
-            antenaBase.localPosition = new Vector3(1.7f, 0f, 2.1f);
+            antenaBase.localPosition = new Vector3(2.4f, 0f, 2.9f);
             var metal = Opaco("1994Metal", new Color(0.75f, 0.76f, 0.78f), smooth: 0.6f, metal: 0.4f);
             // O radar inteiro gira sobre a base (modelo satelliteDish_large).
             var giro = new GameObject("Giro").transform;
             giro.SetParent(antenaBase, false);
-            Modelo("Kenney/space-kit/satelliteDish_large", giro, Vector3.zero, 180f, 2.4f);
+            Modelo("Kenney/space-kit/satelliteDish_large", giro, Vector3.zero, 180f, 1.9f, Medida.MaiorLado);
             var girar = giro.gameObject.AddComponent<Girar>();
             girar.grausPorSegundo = 60f;
             girar.ativo = false;
             var inclinacao = new GameObject("Inclinação").transform;
             inclinacao.SetParent(giro, false);
-            inclinacao.localPosition = new Vector3(0f, 2.05f, 0f);
+            inclinacao.localPosition = new Vector3(0f, 1.5f, 0f);
             inclinacao.localRotation = Quaternion.Euler(-55f, 0f, 0f);
             var feixe = Bloco("Feixe", inclinacao, new Vector3(0f, 0f, 12f), new Vector3(0.6f, 12f, 0.6f),
                 Transparente("1994Feixe", new Color(0.4f, 1f, 0.6f, 0.12f), true), PrimitiveType.Cylinder, new Vector3(90f, 0f, 0f));
             var bipe = Fonte("Bipe do radar", q, antenaBase.position + Vector3.up * 2f, true);
+            feixe.SetActive(false);
 
             // Ionosfera: faixa translúcida alta no céu.
             var ionosfera = Bloco("Ionosfera", q, new Vector3(0f, 45f, 40f), new Vector3(320f, 320f, 1f),
@@ -208,6 +218,8 @@ namespace TrilhaDaInovacao.EditorTools
             var rotuloIonosfera = Texto("Rótulo ionosfera", q, new Vector3(0f, 28f, 32f), "IONOSFERA", 2.6f, 40f,
                 new Color(0.9f, 0.8f, 1f)).gameObject;
             rotuloIonosfera.AddComponent<EncararUsuario>();
+            ionosfera.SetActive(false);
+            rotuloIonosfera.SetActive(false);
 
             // Foguete de sondagem na rampa, ao longe, e a trajetória até a ionosfera.
             var rampa = new Vector3(-5f, 0f, 16f);
@@ -238,7 +250,7 @@ namespace TrilhaDaInovacao.EditorTools
             pontoNoCeu.localPosition = new Vector3(-2f, 22f, 30f);
 
             // Mesa de instrumentos e bandeiras INPE / NASA.
-            Modelo("Kenney/space-kit/desk_computer", q, new Vector3(-1.5f, 0f, 1.7f), 180f, 1.1f, Medida.Largura);
+            Modelo("Kenney/space-kit/desk_computer", q, new Vector3(-1.7f, 0f, 2.0f), 180f, 1.0f, Medida.MaiorLado);
 
             Bandeira(q, new Vector3(-2.25f, 0f, 2.35f), true);
             Bandeira(q, new Vector3(-1.45f, 0f, 2.35f), false);
@@ -307,13 +319,13 @@ namespace TrilhaDaInovacao.EditorTools
 
             // Mesa-mapa com a ilha de São Luís.
             var tampo = Opaco("2009Tampo", new Color(0.03f, 0.06f, 0.12f), new Color(0.01f, 0.03f, 0.08f), smooth: 0.8f);
-            Bloco("Tampo", q, new Vector3(0f, 0.85f, 0.95f), new Vector3(2f, 0.05f, 1.2f), tampo);
+            Bloco("Tampo", q, new Vector3(0f, 0.85f, 1.15f), new Vector3(2f, 0.05f, 1.2f), tampo);
             var perna = Opaco("2009Perna", new Color(0.2f, 0.22f, 0.26f));
             foreach (var x in new[] { -0.9f, 0.9f })
-            foreach (var z in new[] { 0.45f, 1.45f })
+            foreach (var z in new[] { 0.65f, 1.65f })
                 Bloco("Perna", q, new Vector3(x, 0.42f, z), new Vector3(0.06f, 0.84f, 0.06f), perna);
 
-            var centroIlha = new Vector3(0f, 0.878f, 1.02f);
+            var centroIlha = new Vector3(0f, 0.878f, 1.22f);
             var ilha = new GameObject("Ilha de São Luís (estilizada)");
             ilha.transform.SetParent(q, false);
             ilha.transform.localPosition = centroIlha;
@@ -323,7 +335,7 @@ namespace TrilhaDaInovacao.EditorTools
             ilhaR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             // Os seis pinos (instituições) e o ponto grande para tocar.
-            var ponto = new Vector3(0f, 0.96f, 0.52f);
+            var ponto = new Vector3(0f, 0.96f, 0.62f);
             var cabecaPino = Opaco("2009Pino", new Color(0.6f, 0.7f, 0.8f), new Color(0.05f, 0.08f, 0.1f));
             var hasteMat = Opaco("2009Haste", new Color(0.7f, 0.7f, 0.75f));
             var pinos = new List<Renderer>();
@@ -370,12 +382,20 @@ namespace TrilhaDaInovacao.EditorTools
             // Rack de rede ao fundo.
             var rack = Bloco("Rack de rede", q, new Vector3(1.9f, 1f, 3.3f), new Vector3(0.6f, 2f, 0.6f), Opaco("2009Rack", new Color(0.12f, 0.12f, 0.14f), metal: 0.5f));
             var ledAzul = Opaco("2009Led", Color.black, new Color(0.2f, 0.6f, 1f));
-            var leds = new List<Renderer>();
+            var gruposRede = new[] { new List<GameObject>(), new List<GameObject>(), new List<GameObject>() };
             for (var l = 0; l < 10; l++)
             for (var c = 0; c < 4; c++)
-                leds.Add(Bloco("LED", q, new Vector3(1.75f + c * 0.1f, 0.5f + l * 0.14f, 2.995f), new Vector3(0.04f, 0.02f, 0.01f), ledAzul).GetComponent<Renderer>());
-            var pisca = rack.AddComponent<PiscaLeds>();
-            pisca.leds = leds.ToArray();
+                gruposRede[(c + l) % 3].Add(Bloco("LED", q, new Vector3(1.75f + c * 0.1f, 0.5f + l * 0.14f, 2.995f), new Vector3(0.04f, 0.02f, 0.01f), ledAzul));
+            var controleRede = new GameObject("Controle dos LEDs");
+            controleRede.transform.SetParent(q, false);
+            controleRede.transform.localPosition = rack.transform.localPosition;
+            var pisca = controleRede.AddComponent<PiscaLeds>();
+            pisca.leds = new[]
+            {
+                Combinar("LEDs A", q, gruposRede[0], ledAzul),
+                Combinar("LEDs B", q, gruposRede[1], ledAzul),
+                Combinar("LEDs C", q, gruposRede[2], ledAzul)
+            };
             pisca.cor = new Color(0.3f, 0.7f, 1f);
 
             var ambiente = Fonte("Servidores", q, q.TransformPoint(new Vector3(1.9f, 1f, 3f)), true);

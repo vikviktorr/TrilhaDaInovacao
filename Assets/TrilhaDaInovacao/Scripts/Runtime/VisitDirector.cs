@@ -45,8 +45,10 @@ namespace TrilhaDaInovacao
         int falaAtual;
         string cenaCarregada;
         bool tour;
+        bool qa;
         string pastaTour;
         int capturas;
+        QARelatorio relatorio;
 
         public GuideCharacter Guia => guia;
         public SubtitleController Legenda => legenda;
@@ -54,11 +56,15 @@ namespace TrilhaDaInovacao
         public SessionLogger Registro => registro;
         public AudioSource Efeitos => efeitos;
         public bool Tour => tour;
-        public float TempoDica => tour ? float.MaxValue : tempoDica;
-        public float TempoAuto => tour ? 1.2f : tempoAuto;
+
+        /// <summary>Modo -qa: visita em tempo real com visitante simulado e relatório.</summary>
+        public bool QA => qa;
+        public DesktopRig Desktop => desktop;
+        public float TempoDica => tour && !qa ? float.MaxValue : tempoDica;
+        public float TempoAuto => qa ? tempoAuto + 2f : tour ? 1.2f : tempoAuto;
 
         /// <summary>Encurta falas no tour automático, que só verifica a montagem.</summary>
-        float FatorFala => tour ? 0.35f : 1f;
+        float FatorFala => tour && !qa ? 0.35f : 1f;
 
         Transform Cabeca => Camera.main != null ? Camera.main.transform : transform;
 
@@ -67,14 +73,17 @@ namespace TrilhaDaInovacao
             fader.FecharImediato(Color.black);
             yield return XRStartup.Inicializar();
 
-            tour = XRStartup.TemArgumento("-tour");
+            qa = XRStartup.TemArgumento("-qa");
+            tour = qa || XRStartup.TemArgumento("-tour");
             if (tour)
             {
-                pastaTour = XRStartup.ValorDoArgumento("-tour");
+                pastaTour = XRStartup.ValorDoArgumento(qa ? "-qa" : "-tour");
                 if (string.IsNullOrEmpty(pastaTour) || pastaTour.StartsWith("-"))
                     pastaTour = Path.Combine(Application.persistentDataPath, "tour");
                 Directory.CreateDirectory(pastaTour);
             }
+
+            if (qa) relatorio = gameObject.AddComponent<QARelatorio>();
 
             if (XRStartup.XRAtivo) operador.CarregarCalibracao();
             else desktop.Ativar();
@@ -91,6 +100,7 @@ namespace TrilhaDaInovacao
                 yield return RodarVisita();
                 if (tour)
                 {
+                    if (relatorio != null) Debug.Log($"[Trilha da Inovação] Relatório de QA: {relatorio.Escrever(pastaTour)}");
                     Debug.Log($"[Trilha da Inovação] Tour concluído: {capturas} capturas em {pastaTour}");
                     yield return new WaitForSeconds(0.5f);
                     Application.Quit();
@@ -174,6 +184,16 @@ namespace TrilhaDaInovacao
                     yield break;
                 }
 
+                // QA: o visitante simulado caminha de verdade até a marca.
+                if (qa)
+                {
+                    yield return desktop.Caminhar(LayoutTrilha.Marcas[i], 0.7f);
+                    if (!marcas[i].ContemCabeca(Cabeca.position))
+                        relatorio.Problema($"A marca {i} não detectou a cabeça do visitante ao chegar.");
+                    desktop.Posicionar(LayoutTrilha.Marcas[i], LayoutTrilha.Foco(i));
+                    continue;
+                }
+
                 if (tour && (tourEspera -= Time.deltaTime) <= 0f)
                     desktop.Posicionar(LayoutTrilha.Marcas[i], LayoutTrilha.Foco(i));
 
@@ -254,6 +274,13 @@ namespace TrilhaDaInovacao
             registro.IniciarCena(sequencia.name, previsto);
             pularSolicitado = false;
 
+            var cenaAtiva = SceneManager.GetSceneByName(cenaCarregada);
+            if (relatorio != null)
+            {
+                relatorio.InicioCena(sequencia.name, epoca > LayoutTrilha.TotalEpocas ? LayoutTrilha.TotalEpocas : epoca, previsto, cenaAtiva, sequencia);
+                yield return Panorama(sequencia.name, epoca > LayoutTrilha.TotalEpocas ? LayoutTrilha.TotalEpocas : epoca);
+            }
+
             var terminou = false;
             sequenciaEmCurso = sequencia;
             cenaEmCurso = StartCoroutine(Envolver(sequencia.Executar(this), () => terminou = true));
@@ -273,6 +300,36 @@ namespace TrilhaDaInovacao
             cenaEmCurso = null;
             sequenciaEmCurso = null;
             registro.EncerrarCena();
+            if (relatorio != null) relatorio.FimCena(cenaAtiva);
+        }
+
+        /// <summary>QA: quatro fotos (frente, direita, trás, esquerda) ao abrir a cena.</summary>
+        IEnumerator Panorama(string nome, int marca)
+        {
+            var foco = LayoutTrilha.Foco(marca);
+            var cabeca = Cabeca.position;
+            var direcoes = new[] { ("frente", foco), ("direita", Vector3.Cross(Vector3.up, foco)), ("tras", -foco), ("esquerda", -Vector3.Cross(Vector3.up, foco)) };
+            foreach (var (rotulo, d) in direcoes)
+            {
+                desktop.OlharPara(cabeca + d * 2f + Vector3.down * 0.35f);
+                yield return null;
+                Capturar($"{Arquivo(nome)}-{rotulo}");
+                yield return null;
+            }
+
+            desktop.OlharPara(cabeca + foco * 2f + Vector3.down * 0.4f);
+        }
+
+        static string Arquivo(string nome)
+        {
+            var limpo = new System.Text.StringBuilder();
+            foreach (var c in nome.Normalize(System.Text.NormalizationForm.FormD))
+            {
+                if (char.IsLetterOrDigit(c) && c < 128) limpo.Append(char.ToLowerInvariant(c));
+                else if (c == ' ' && limpo.Length > 0 && limpo[limpo.Length - 1] != '-') limpo.Append('-');
+            }
+
+            return limpo.ToString().Trim('-');
         }
 
         static IEnumerator Envolver(IEnumerator rotina, Action fim)

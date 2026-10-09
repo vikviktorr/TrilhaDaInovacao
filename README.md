@@ -111,6 +111,7 @@ O jogo abre em VR quando acha um runtime OpenXR (Quest Link, SteamVR, ALVR, Mona
 - Cada visita grava `sessoes.csv` (sessão, cena, duração, previsto, gatilho `visitante`/`auto`/`pulado`) em `persistentDataPath`.
   No Quest: `/sdcard/Android/data/com.fofuchosgames.trilhadainovacao/files/`. No Linux: `~/.config/unity3d/Fofucho's Games Group/Trilha da Inovação/`.
 - `TrilhaDaInovacao.x86_64 -tour <pasta>` percorre a visita sozinho e salva screenshots dos momentos-chave.
+- `TrilhaDaInovacao.x86_64 -qa <pasta>` faz o mesmo e grava `relatorio-qa.md`: tempo de cada cena contra o roteiro, FPS, draw calls, triângulos e luzes (orçamento do Quest 2), ergonomia (alvos de toque, legendas de até 2 linhas, corredor livre) e erros do log.
 
 ## Pendências (do documento)
 

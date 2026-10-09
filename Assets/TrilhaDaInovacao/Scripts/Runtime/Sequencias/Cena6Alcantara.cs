@@ -50,7 +50,7 @@ namespace TrilhaDaInovacao
 
             // O guia é interrompido no meio da fala sobre as cargas.
             StartCoroutine(Dizer("pion"));
-            yield return Esperar(ctx.Tour ? 0.8f : 2.4f);
+            yield return Esperar(ctx.Tour && !ctx.QA ? 0.8f : 2.4f);
             ctx.Som("sirene", 0.5f);
             yield return Dizer("decolar");
 
@@ -64,6 +64,7 @@ namespace TrilhaDaInovacao
             yield return Surgir(painelResultado, 0.6f);
             ctx.Enquadrar(painelResultado.position);
             yield return Dizer("resultado");
+            yield return Dizer("resultado2");
             ctx.Capturar("2025-resultado");
             yield return Dizer("reconstituicao");
         }

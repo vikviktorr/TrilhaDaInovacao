@@ -46,6 +46,21 @@ namespace TrilhaDaInovacao
             AplicarRotacao();
         }
 
+        /// <summary>QA: anda até um ponto do chão na velocidade de um visitante.</summary>
+        public System.Collections.IEnumerator Caminhar(Vector3 destino, float metrosPorSegundo)
+        {
+            while (true)
+            {
+                var cabeca = cameraTransform.position;
+                var falta = new Vector3(destino.x - cabeca.x, 0f, destino.z - cabeca.z);
+                if (falta.magnitude < 0.05f) yield break;
+                var passo = Mathf.Min(falta.magnitude, metrosPorSegundo * Time.deltaTime);
+                cameraRig.position += falta.normalized * passo;
+                OlharPara(cameraTransform.position + falta.normalized * 2f + Vector3.down * 0.5f);
+                yield return null;
+            }
+        }
+
         /// <summary>Vira a câmera para um ponto do mundo, sem mover o visitante.</summary>
         public void OlharPara(Vector3 alvo)
         {
@@ -117,7 +132,7 @@ namespace TrilhaDaInovacao
 
         void OnGUI()
         {
-            if (!Ativo || XRStartup.TemArgumento("-tour")) return;
+            if (!Ativo || XRStartup.TemArgumento("-tour") || XRStartup.TemArgumento("-qa")) return;
 
             estilo ??= new GUIStyle(GUI.skin.label) { fontSize = 15, richText = true };
 

@@ -46,11 +46,14 @@ MonoBehaviour:
     audio: {fileID: 0}
     duracao: 0
   - id: resultado
-    texto: "O lan\xE7amento aconteceu, mas uma anomalia levou \xE0 perda da miss\xE3o.
-      O PION-BR2 n\xE3o chegou \xE0 \xF3rbita."
+    texto: "O lan\xE7amento aconteceu, mas uma anomalia levou \xE0 perda da miss\xE3o."
     audio: {fileID: 0}
     duracao: 0
   - id: reconstituicao
     texto: "Reconstitui\xE7\xE3o feita para este projeto."
+    audio: {fileID: 0}
+    duracao: 0
+  - id: resultado2
+    texto: "O PION-BR2 n\xE3o chegou \xE0 \xF3rbita."
     audio: {fileID: 0}
     duracao: 0
