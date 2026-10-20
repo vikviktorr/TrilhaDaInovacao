@@ -31,6 +31,11 @@ As marcas formam um U numa área livre de **5 × 4 m** (provisório, é preciso 
 As coordenadas ficam em `Scripts/Runtime/LayoutTrilha.cs`, e é só ali que se muda o layout: a marca virtual, o gatilho e o cenário acompanham.
 O perímetro da área aparece fraco no chão em todas as épocas.
 
+A abertura e o encerramento (cenas 0 e 7) acontecem dentro do **modelo 3D do Sebraelab** (`Assets/Sebraelab3D/SM_Combined.fbx`), em escala 1:1.
+Hoje a trilha fica no salão ao sul do modelo, a área livre com mais folga (≈ 9,8 × 5,8 m).
+O ponto do modelo que fica no centro do U é `LayoutTrilha.CentroNoSebraelab`. Para usar outra área do Sebraelab, mude só esse valor.
+Quando o visitante chega à primeira marca, o Sebraelab dá lugar às épocas.
+
 ```
  z  ┌──────────────────────────────────────┐
  ▲  │ SAÍDA ◄─ 2025 ◄── 2022 ◄── 2018     │   linha de cima (olham para o sul)
@@ -45,9 +50,10 @@ O perímetro da área aparece fraco no chão em todas as épocas.
 
 ```
 Assets/
+├── Sebraelab3D/            pacote SebraeLabUnityAssets (modelo do Sebraelab, FBX + texturas)
 ├── Scenes/                 GERADAS pelo construtor (não editar à mão)
 │   ├── 00_Bootstrap        rig XR, mãos, guia, legenda, marcas, diretor da visita
-│   ├── 01_Hub              cenas 0 e 7
+│   ├── 01_Hub              cenas 0 e 7, dentro do Sebraelab
 │   └── 02…07_<época>       uma cena aditiva por época
 ├── TextMesh Pro/           TMP Essential Resources
 └── TrilhaDaInovacao/
@@ -73,6 +79,7 @@ Assim dá para gerar tudo por código e mudar o roteiro sem tocar em assets bin�
 
 | Fonte | Licença | Como entra no projeto |
 | --- | --- | --- |
+| Sebraelab (pacote `SebraeLabUnityAssets.unitypackage`, da equipe) | Próprio | Importado em `Assets/Sebraelab3D`. O hub usa `SM_Combined.fbx`; sem o pacote, o construtor volta a uma réplica de blocos |
 | [Kenney](https://kenney.nl/assets/category:3D): Furniture, Space, Nature, City Commercial, Factory, Mini Characters | CC0 (domínio público) | `Ferramentas/baixar-modelos.sh` baixa e copia só os FBX usados |
 | Sketchfab, TurboSquid, Fab | Varia por modelo (CC-BY exige crédito) | Exigem login; ver "Pendências" |
 
@@ -115,7 +122,7 @@ O jogo abre em VR quando acha um runtime OpenXR (Quest Link, SteamVR, ALVR, Mona
 
 ## Pendências (do documento)
 
-- [ ] Medir a área livre do Sebraelab e ajustar `LayoutTrilha` (hoje 5 × 4 m)
+- [ ] Medir a área livre do Sebraelab e ajustar `LayoutTrilha` (hoje 5 × 4 m, no salão sul do modelo: `CentroNoSebraelab`)
 - [ ] Nomes das seis instituições da Rede Metropolitana (RNP, 2009) para rotular os pinos
 - [ ] Valores e fonte da comparação 3G/4G/5G (hoje o painel é ilustrativo)
 - [ ] Gravar as falas do guia e definir o nome e o visual dele

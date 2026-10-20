@@ -279,7 +279,71 @@ namespace TrilhaDaInovacao.EditorTools
         }
 
         // ------------------------------------------------------------------
-        // Hub: mobiliário do Sebraelab, só junto às paredes (fora do percurso).
+        // Hub: o Sebraelab de verdade (pacote SebraeLabUnityAssets).
+        // ------------------------------------------------------------------
+        const string ModeloSebraelab = "Assets/Sebraelab3D/SM_Combined.fbx";
+
+        /// <summary>Material do FBX → material gerado (nome, lisura).</summary>
+        static readonly Dictionary<string, (string nome, float liso)> materiaisSebraelab = new Dictionary<string, (string, float)>
+        {
+            ["Parede"] = ("SebraelabParede", 0.1f),
+            ["Calçada"] = ("SebraelabCalcada", 0.05f),
+            ["Chao Azulejo"] = ("SebraelabPisoAzulejo", 0.4f),
+            ["Chao Madeira"] = ("SebraelabPisoMadeira", 0.3f),
+            ["Frame Metal"] = ("SebraelabMetal", 0.5f),
+            ["CombinedTexture"] = ("SebraelabMobilia", 0.2f)
+        };
+
+        /// <summary>
+        /// Instancia o modelo do Sebraelab em escala 1:1, com o centro da área
+        /// livre (<see cref="LayoutTrilha.CentroNoSebraelab"/>) na origem da
+        /// trilha. Falso se o pacote não foi importado.
+        /// </summary>
+        static bool MontarSebraelab(Transform sala)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(ModeloSebraelab);
+            if (asset == null)
+            {
+                Debug.LogWarning("[Trilha da Inovação] Modelo do Sebraelab não encontrado. " +
+                                 "Importe SebraeLabUnityAssets.unitypackage (fica em Assets/Sebraelab3D).");
+                return false;
+            }
+
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(asset);
+            PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+            go.name = "Sebraelab (modelo 3D)";
+            go.transform.SetParent(sala, false);
+            go.transform.localPosition = -LayoutTrilha.CentroNoSebraelab;
+
+            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            {
+                r.shadowCastingMode = ShadowCastingMode.Off;
+                r.receiveShadows = false;
+                r.sharedMaterials = r.sharedMaterials.Select(MaterialSebraelab).ToArray();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Troca o material embutido no FBX (todos com lisura 0,5) por um gerado,
+        /// com a mesma cor e textura, como os demais materiais do projeto.
+        /// </summary>
+        static Material MaterialSebraelab(Material importado)
+        {
+            if (importado == null) return null;
+            var cor = importado.GetColor("_BaseColor");
+            if (importado.name == "Vidro") return Transparente("SebraelabVidro", new Color(cor.r, cor.g, cor.b, 0.18f));
+
+            var (nome, liso) = materiaisSebraelab.TryGetValue(importado.name, out var par) ? par : ("Sebraelab" + importado.name, 0.2f);
+            var m = Opaco(nome, cor, smooth: liso);
+            m.SetTexture("_BaseMap", importado.GetTexture("_BaseMap"));
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
+        // ------------------------------------------------------------------
+        // Hub sem o pacote: mobiliário da réplica, só junto às paredes.
         // ------------------------------------------------------------------
         static void DecorarHub(Transform sala)
         {

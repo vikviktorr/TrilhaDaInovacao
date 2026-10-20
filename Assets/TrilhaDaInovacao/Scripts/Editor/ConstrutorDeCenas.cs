@@ -269,23 +269,9 @@ namespace TrilhaDaInovacao.EditorTools
             Ambiente(new Color(0.55f, 0.58f, 0.64f), Ceu("CeuHub", new Color(0.55f, 0.7f, 0.9f), 1.2f, 0.6f),
                 new Color(1f, 0.98f, 0.95f), 1f, new Vector3(55f, -35f, 0f));
 
-            var sala = new GameObject("Sebraelab (réplica simplificada)").transform;
-            var w = LayoutTrilha.LarguraSala;
-            var d = LayoutTrilha.ProfundidadeSala;
-            var branco = Opaco("HubParede", new Color(0.93f, 0.94f, 0.96f));
-            var azul = Opaco("HubAzul", new Color(0.05f, 0.3f, 0.7f));
-            var piso = Opaco("HubPiso", new Color(0.78f, 0.8f, 0.84f), smooth: 0.45f);
-
-            Bloco("Piso", sala, new Vector3(0f, -0.05f, 0f), new Vector3(w, 0.1f, d), piso);
-            Bloco("Piso externo", sala, new Vector3(0f, -0.07f, 0f), new Vector3(16f, 0.1f, 16f), Opaco("HubPisoExterno", new Color(0.3f, 0.33f, 0.38f)));
-            Paredes(sala, w, d, 2.8f, branco, azul);
-            DecorarHub(sala);
-            Bloco("Teto", sala, new Vector3(0f, 2.85f, 0f), new Vector3(w + 0.3f, 0.1f, d + 0.3f), branco);
-            for (var i = -1; i <= 1; i++)
-            {
-                Bloco($"Luminária {i}", sala, new Vector3(i * 1.6f, 2.79f, 0f), new Vector3(1.2f, 0.02f, 0.3f),
-                    Opaco("HubLuminaria", Color.white, Color.white * 1.5f));
-            }
+            // A visita começa (e termina) dentro do Sebraelab real; as épocas o transformam.
+            var sala = new GameObject("Sebraelab").transform;
+            if (!MontarSebraelab(sala)) ReplicaDoSebraelab(sala);
 
             // A linha luminosa no piso que mostra todo o percurso.
             var pontos = new List<Vector3>();
@@ -351,6 +337,27 @@ namespace TrilhaDaInovacao.EditorTools
             encerramento.sons = sons;
 
             return Salvar(cena, LayoutTrilha.CenaHub);
+        }
+
+        /// <summary>Sala de blocos do tamanho da área livre, usada só sem o pacote do Sebraelab.</summary>
+        static void ReplicaDoSebraelab(Transform sala)
+        {
+            var w = LayoutTrilha.LarguraSala;
+            var d = LayoutTrilha.ProfundidadeSala;
+            var branco = Opaco("HubParede", new Color(0.93f, 0.94f, 0.96f));
+            var azul = Opaco("HubAzul", new Color(0.05f, 0.3f, 0.7f));
+            var piso = Opaco("HubPiso", new Color(0.78f, 0.8f, 0.84f), smooth: 0.45f);
+
+            Bloco("Piso", sala, new Vector3(0f, -0.05f, 0f), new Vector3(w, 0.1f, d), piso);
+            Bloco("Piso externo", sala, new Vector3(0f, -0.07f, 0f), new Vector3(16f, 0.1f, 16f), Opaco("HubPisoExterno", new Color(0.3f, 0.33f, 0.38f)));
+            Paredes(sala, w, d, 2.8f, branco, azul);
+            DecorarHub(sala);
+            Bloco("Teto", sala, new Vector3(0f, 2.85f, 0f), new Vector3(w + 0.3f, 0.1f, d + 0.3f), branco);
+            for (var i = -1; i <= 1; i++)
+            {
+                Bloco($"Luminária {i}", sala, new Vector3(i * 1.6f, 2.79f, 0f), new Vector3(1.2f, 0.02f, 0.3f),
+                    Opaco("HubLuminaria", Color.white, Color.white * 1.5f));
+            }
         }
 
         // ==================================================================

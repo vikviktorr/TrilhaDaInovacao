@@ -14,6 +14,15 @@ namespace TrilhaDaInovacao
         public const float LarguraSala = 5f;
         public const float ProfundidadeSala = 4f;
 
+        /// <summary>
+        /// Ponto do modelo 3D do Sebraelab (Assets/Sebraelab3D/SM_Combined, em
+        /// metros no referencial do modelo) que fica no centro da área livre,
+        /// ou seja, na origem da trilha. PROVISÓRIO, como as medidas: hoje é o
+        /// salão ao sul (≈ 9,8 × 5,8 m sem móveis). Outra área onde o U cabe:
+        /// (-0,5; 0; 7,6), entre a mesa grande e a parede norte.
+        /// </summary>
+        public static readonly Vector3 CentroNoSebraelab = new Vector3(0f, 0f, -13f);
+
         /// <summary>Raio em que a cabeça do visitante conta como "na marca".</summary>
         public const float RaioMarca = 0.6f;
 
