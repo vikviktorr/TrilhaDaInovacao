@@ -8,6 +8,8 @@ namespace TrilhaDaInovacao
     /// Modo sem headset, para testar a visita no PC e apresentar no
     /// computador: WASD anda, botão direito (ou Tab para travar o cursor) olha,
     /// clique esquerdo toca o objeto sob a mira. A altura dos olhos é fixa.
+    /// O corpo é uma cápsula que desliza nas paredes e móveis do cenário
+    /// (camada <see cref="LayoutTrilha.CamadaCenario"/>) em vez de atravessá-los.
     /// </summary>
     public class DesktopRig : MonoBehaviour
     {
@@ -16,6 +18,10 @@ namespace TrilhaDaInovacao
         [SerializeField, Min(0.1f)] float alturaOlhos = 1.6f;
         [SerializeField, Min(0.1f)] float velocidade = 1.4f;
         [SerializeField, Min(0.01f)] float sensibilidade = 0.12f;
+        [SerializeField, Min(0.05f)] float raioCorpo = 0.25f;
+
+        const float Pele = 0.02f;
+        const float AlturaJoelho = 0.3f;
 
         float yaw, pitch;
         bool cursorTravado;
@@ -103,10 +109,42 @@ namespace TrilhaDaInovacao
                 frente.y = 0f;
                 frente.Normalize();
                 var direita = new Vector3(frente.z, 0f, -frente.x);
-                cameraRig.position += (frente * entrada.y + direita * entrada.x).normalized * velocidade * Time.deltaTime;
+                Andar((frente * entrada.y + direita * entrada.x).normalized * velocidade * Time.deltaTime);
             }
 
             if (mouse.leftButton.wasPressedThisFrame) Tocar(mouse);
+        }
+
+        /// <summary>Move o corpo; ao bater no cenário, desliza ao longo da superfície.</summary>
+        void Andar(Vector3 deslocamento)
+        {
+            const int mascara = 1 << LayoutTrilha.CamadaCenario;
+            for (var i = 0; i < 3 && deslocamento.sqrMagnitude > 1e-8f; i++)
+            {
+                var cabeca = cameraTransform.position;
+                var chao = cameraRig.position.y;
+                var baixo = new Vector3(cabeca.x, chao + AlturaJoelho + raioCorpo, cabeca.z);
+                var alto = new Vector3(cabeca.x, Mathf.Max(baixo.y, cabeca.y - raioCorpo), cabeca.z);
+                var distancia = deslocamento.magnitude;
+                var direcao = deslocamento / distancia;
+
+                if (!Physics.CapsuleCast(baixo, alto, raioCorpo, direcao, out var acerto, distancia + Pele, mascara,
+                        QueryTriggerInteraction.Ignore))
+                {
+                    cameraRig.position += deslocamento;
+                    return;
+                }
+
+                var livre = Mathf.Max(0f, acerto.distance - Pele);
+                cameraRig.position += direcao * livre;
+
+                var normal = acerto.normal;
+                normal.y = 0f;
+                if (normal.sqrMagnitude < 1e-6f) return;
+                normal.Normalize();
+                var resto = direcao * (distancia - livre);
+                deslocamento = resto - Vector3.Dot(resto, normal) * normal;
+            }
         }
 
         void Tocar(Mouse mouse)
@@ -116,7 +154,8 @@ namespace TrilhaDaInovacao
                 ? new Ray(cameraTransform.position, cameraTransform.forward)
                 : cam.ScreenPointToRay(mouse.position.ReadValue());
 
-            if (!Physics.Raycast(raio, out var acerto, 6f, ~0, QueryTriggerInteraction.Collide)) return;
+            const int semCenario = ~(1 << LayoutTrilha.CamadaCenario);
+            if (!Physics.Raycast(raio, out var acerto, 6f, semCenario, QueryTriggerInteraction.Collide)) return;
             var alvo = acerto.collider.GetComponentInParent<PokeTrigger>();
             if (alvo != null) alvo.Tocar();
         }

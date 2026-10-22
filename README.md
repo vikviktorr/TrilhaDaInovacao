@@ -32,9 +32,11 @@ As coordenadas ficam em `Scripts/Runtime/LayoutTrilha.cs`, e é só ali que se m
 O perímetro da área aparece fraco no chão em todas as épocas.
 
 A abertura e o encerramento (cenas 0 e 7) acontecem dentro do **modelo 3D do Sebraelab** (`Assets/Sebraelab3D/SM_Combined.fbx`), em escala 1:1.
-Hoje a trilha fica no salão ao sul do modelo, a área livre com mais folga (≈ 9,8 × 5,8 m).
+Hoje a trilha fica no salão norte: o visitante começa de frente para a mesa de madeira, com a TV, a caixa de som e as lousas ao fundo, e o guia o espera atrás da mesa.
+O U cabe entre a parede de ripas, o banco junto ao vidro e a mesa.
 O ponto do modelo que fica no centro do U é `LayoutTrilha.CentroNoSebraelab`. Para usar outra área do Sebraelab, mude só esse valor.
 Quando o visitante chega à primeira marca, o Sebraelab dá lugar às épocas.
+No modo desktop, paredes e móveis de todos os cenários têm colisão (camada `Cenario`): o visitante desliza neles em vez de atravessá-los.
 
 ```
  z  ┌──────────────────────────────────────┐
@@ -122,7 +124,7 @@ O jogo abre em VR quando acha um runtime OpenXR (Quest Link, SteamVR, ALVR, Mona
 
 ## Pendências (do documento)
 
-- [ ] Medir a área livre do Sebraelab e ajustar `LayoutTrilha` (hoje 5 × 4 m, no salão sul do modelo: `CentroNoSebraelab`)
+- [ ] Medir a área livre do Sebraelab e ajustar `LayoutTrilha` (hoje 5 × 4 m, no salão norte do modelo: `CentroNoSebraelab`)
 - [ ] Nomes das seis instituições da Rede Metropolitana (RNP, 2009) para rotular os pinos
 - [ ] Valores e fonte da comparação 3G/4G/5G (hoje o painel é ilustrativo)
 - [ ] Gravar as falas do guia e definir o nome e o visual dele

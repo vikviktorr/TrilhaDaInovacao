@@ -23,16 +23,20 @@ namespace TrilhaDaInovacao.EditorTools
                 new Color(0.95f, 1f, 0.95f), 0.45f, new Vector3(70f, 20f, 0f));
 
             var q = Quadro(1, "Central TELMA · 1986");
-            SalaFechada(q, new Vector3(0.6f, 0f, 1f), new Vector3(6f, 2.9f, 6f),
+            // Salão amplo (10 × 9 m, pé-direito de 3,6 m): os bastidores ficam ao fundo,
+            // a 4 m do visitante, e os móveis encostados nas paredes.
+            SalaFechada(q, new Vector3(0.6f, 0f, 2f), new Vector3(10f, 3.6f, 9f),
                 Opaco("1986Piso", new Color(0.72f, 0.66f, 0.52f), smooth: 0.35f),
                 Opaco("1986Parede", new Color(0.62f, 0.64f, 0.52f)),
                 Opaco("1986Teto", new Color(0.85f, 0.85f, 0.8f)));
 
             var fluorescente = Opaco("1986Fluorescente", Color.white, new Color(0.9f, 1f, 0.95f) * 1.6f);
-            for (var i = 0; i < 3; i++)
-                Bloco($"Fluorescente {i}", q, new Vector3(-1.2f + i * 1.4f, 2.86f, 1.2f), new Vector3(0.18f, 0.03f, 2.4f), fluorescente);
-            Luz("Luz fluorescente A", q, new Vector3(-0.4f, 2.5f, 0.6f), LightType.Point, new Color(0.92f, 1f, 0.95f), 1.4f, 6f);
-            Luz("Luz fluorescente B", q, new Vector3(0.8f, 2.5f, 2.2f), LightType.Point, new Color(0.92f, 1f, 0.95f), 1.2f, 6f);
+            for (var i = 0; i < 4; i++)
+            for (var j = 0; j < 2; j++)
+                Bloco($"Fluorescente {i}-{j}", q, new Vector3(-2.4f + i * 2f, 3.56f, 0.2f + j * 3.4f), new Vector3(0.18f, 0.03f, 2.4f), fluorescente);
+            Luz("Luz fluorescente A", q, new Vector3(-1.2f, 3.1f, 0.6f), LightType.Point, new Color(0.92f, 1f, 0.95f), 1.4f, 8f);
+            Luz("Luz fluorescente B", q, new Vector3(2.4f, 3.1f, 0.6f), LightType.Point, new Color(0.92f, 1f, 0.95f), 1.2f, 8f);
+            Luz("Luz fluorescente C", q, new Vector3(0.6f, 3.1f, 3.6f), LightType.Point, new Color(0.92f, 1f, 0.95f), 1.3f, 8f);
 
             // Bastidores da central, com LEDs.
             var rackMat = Opaco("1986Rack", new Color(0.42f, 0.48f, 0.42f), smooth: 0.4f, metal: 0.3f);
@@ -40,13 +44,13 @@ namespace TrilhaDaInovacao.EditorTools
             var bastidores = new List<PiscaLeds>();
             for (var i = 0; i < 5; i++)
             {
-                var x = -1.6f + i * 0.8f;
-                var rack = Bloco($"Bastidor {i + 1}", q, new Vector3(x, 1f, 2.3f), new Vector3(0.6f, 2f, 0.5f), rackMat);
+                var x = -2f + i * 1f;
+                var rack = Bloco($"Bastidor {i + 1}", q, new Vector3(x, 1f, 4.2f), new Vector3(0.6f, 2f, 0.5f), rackMat);
                 var grupos = new[] { new List<GameObject>(), new List<GameObject>() };
                 for (var c = 0; c < 3; c++)
                 for (var l = 0; l < 8; l++)
                 {
-                    grupos[(c + l) % 2].Add(Bloco($"LED {c}-{l}", q, new Vector3(x - 0.15f + c * 0.15f, 0.7f + l * 0.16f, 2.045f),
+                    grupos[(c + l) % 2].Add(Bloco($"LED {c}-{l}", q, new Vector3(x - 0.15f + c * 0.15f, 0.7f + l * 0.16f, 3.945f),
                         new Vector3(0.05f, 0.03f, 0.01f), ledMat));
                 }
 
@@ -64,9 +68,9 @@ namespace TrilhaDaInovacao.EditorTools
                 bastidores.Add(pisca);
             }
 
-            Bloco("Calha de cabos", q, new Vector3(0f, 2.45f, 2.3f), new Vector3(4f, 0.08f, 0.3f), Opaco("1986Calha", new Color(0.3f, 0.3f, 0.3f)));
-            Bloco("Placa", q, new Vector3(0f, 2.22f, 2.04f), new Vector3(2.4f, 0.26f, 0.02f), Opaco("1986Placa", new Color(0.08f, 0.15f, 0.35f)));
-            Texto("Texto da placa", q, new Vector3(0f, 2.22f, 2.025f), "TELMA · Central Trópico-R", 0.13f, 2.3f, Color.white);
+            Bloco("Calha de cabos", q, new Vector3(0f, 2.45f, 4.2f), new Vector3(4.8f, 0.08f, 0.3f), Opaco("1986Calha", new Color(0.3f, 0.3f, 0.3f)));
+            Bloco("Placa", q, new Vector3(0f, 2.3f, 3.94f), new Vector3(2.4f, 0.26f, 0.02f), Opaco("1986Placa", new Color(0.08f, 0.15f, 0.35f)));
+            Texto("Texto da placa", q, new Vector3(0f, 2.3f, 3.925f), "TELMA · Central Trópico-R", 0.13f, 2.3f, Color.white);
 
             // Balcão com o telefone de origem.
             Bloco("Balcão", q, new Vector3(-0.1f, 0.44f, 0.78f), new Vector3(0.9f, 0.88f, 0.5f), Opaco("1986Madeira", new Color(0.45f, 0.3f, 0.18f)));
@@ -82,10 +86,10 @@ namespace TrilhaDaInovacao.EditorTools
             somTelefone.spatialBlend = 1f;
 
             // Painel com o mapa simplificado de São Luís.
-            Bloco("Painel mapa", q, new Vector3(2.5f, 1.55f, 2.3f), new Vector3(0.9f, 0.7f, 0.05f), Opaco("1986Mapa", new Color(0.12f, 0.2f, 0.3f)));
-            Texto("Título mapa", q, new Vector3(2.5f, 1.97f, 2.27f), "São Luís", 0.07f, 0.9f, Color.white);
-            var pontoA = new Vector3(2.28f, 1.42f, 2.26f);
-            var pontoB = new Vector3(2.7f, 1.7f, 2.26f);
+            Bloco("Painel mapa", q, new Vector3(3.2f, 1.55f, 4.2f), new Vector3(0.9f, 0.7f, 0.05f), Opaco("1986Mapa", new Color(0.12f, 0.2f, 0.3f)));
+            Texto("Título mapa", q, new Vector3(3.2f, 1.97f, 4.17f), "São Luís", 0.07f, 0.9f, Color.white);
+            var pontoA = new Vector3(2.98f, 1.42f, 4.16f);
+            var pontoB = new Vector3(3.4f, 1.7f, 4.16f);
             var pontoMat = Opaco("1986PontoMapa", Color.yellow, new Color(1f, 0.85f, 0.2f));
             Bloco("Ponto A", q, pontoA, Vector3.one * 0.05f, pontoMat, PrimitiveType.Sphere);
             Bloco("Ponto B", q, pontoB, Vector3.one * 0.05f, pontoMat, PrimitiveType.Sphere);
@@ -99,8 +103,8 @@ namespace TrilhaDaInovacao.EditorTools
             // O pulso da ligação: telefone → bastidores → mapa → telefone de destino.
             var caminhoLocal = new[]
             {
-                new Vector3(-0.1f, 1f, 0.62f), new Vector3(-0.1f, 1.4f, 1.95f), new Vector3(-1.6f, 1.4f, 1.95f),
-                new Vector3(1.6f, 1.4f, 1.95f), pontoA + new Vector3(0f, 0f, -0.05f), pontoB + new Vector3(0f, 0f, -0.05f),
+                new Vector3(-0.1f, 1f, 0.62f), new Vector3(-0.1f, 1.4f, 3.85f), new Vector3(-2f, 1.4f, 3.85f),
+                new Vector3(2f, 1.4f, 3.85f), pontoA + new Vector3(0f, 0f, -0.05f), pontoB + new Vector3(0f, 0f, -0.05f),
                 new Vector3(2.1f, 1.3f, 0.95f), new Vector3(2.1f, 0.95f, 0.95f)
             };
             var caminho = new Vector3[caminhoLocal.Length];
@@ -123,7 +127,7 @@ namespace TrilhaDaInovacao.EditorTools
             pulso.caminho = caminho;
             pulso.bastidores = bastidores.ToArray();
 
-            var ambiente = Fonte("Zumbido da central", q, q.TransformPoint(new Vector3(0f, 1.5f, 2f)), true);
+            var ambiente = Fonte("Zumbido da central", q, q.TransformPoint(new Vector3(0f, 1.5f, 3.9f)), true);
 
             Decorar1986(q);
 
@@ -194,19 +198,24 @@ namespace TrilhaDaInovacao.EditorTools
             // Antena do radar com o feixe que varre o céu.
             var antenaBase = new GameObject("Radar").transform;
             antenaBase.SetParent(q, false);
-            antenaBase.localPosition = new Vector3(2.4f, 0f, 2.9f);
+            antenaBase.localPosition = PosicaoRadar1994;
             var metal = Opaco("1994Metal", new Color(0.75f, 0.76f, 0.78f), smooth: 0.6f, metal: 0.4f);
-            // O radar inteiro gira sobre a base (modelo satelliteDish_large).
+            // Como num radar de verdade, o pedestal fica fixo no chão e só a cabeça
+            // (garfo + refletor parabólico) gira em azimute sobre o rolamento do
+            // topo do pedestal. 60°/s = 10 rpm, típico de radar de vigilância.
+            var radar = Modelo("Kenney/space-kit/satelliteDish_large", antenaBase, Vector3.zero, 180f, 1.9f, Medida.MaiorLado);
             var giro = new GameObject("Giro").transform;
             giro.SetParent(antenaBase, false);
-            Modelo("Kenney/space-kit/satelliteDish_large", giro, Vector3.zero, 180f, 1.9f, Medida.MaiorLado);
+            var centroPrato = antenaBase.position + Vector3.up * 1.2f;
+            var eixoPrato = antenaBase.rotation * Quaternion.Euler(-45f, 180f, 0f) * Vector3.forward;
+            if (radar != null) SepararCabecaDoRadar(radar, giro, out centroPrato, out eixoPrato);
             var girar = giro.gameObject.AddComponent<Girar>();
             girar.grausPorSegundo = 60f;
             girar.ativo = false;
+            // O feixe sai do centro do prato, para onde o refletor aponta.
             var inclinacao = new GameObject("Inclinação").transform;
             inclinacao.SetParent(giro, false);
-            inclinacao.localPosition = new Vector3(0f, 1.5f, 0f);
-            inclinacao.localRotation = Quaternion.Euler(-55f, 0f, 0f);
+            inclinacao.SetPositionAndRotation(centroPrato, Quaternion.LookRotation(eixoPrato));
             var feixe = Bloco("Feixe", inclinacao, new Vector3(0f, 0f, 12f), new Vector3(0.6f, 12f, 0.6f),
                 Transparente("1994Feixe", new Color(0.4f, 1f, 0.6f, 0.12f), true), PrimitiveType.Cylinder, new Vector3(90f, 0f, 0f));
             var bipe = Fonte("Bipe do radar", q, antenaBase.position + Vector3.up * 2f, true);

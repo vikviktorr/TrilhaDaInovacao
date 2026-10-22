@@ -16,12 +16,22 @@ namespace TrilhaDaInovacao
 
         /// <summary>
         /// Ponto do modelo 3D do Sebraelab (Assets/Sebraelab3D/SM_Combined, em
-        /// metros no referencial do modelo) que fica no centro da área livre,
-        /// ou seja, na origem da trilha. PROVISÓRIO, como as medidas: hoje é o
-        /// salão ao sul (≈ 9,8 × 5,8 m sem móveis). Outra área onde o U cabe:
-        /// (-0,5; 0; 7,6), entre a mesa grande e a parede norte.
+        /// metros no referencial do modelo importado) que fica no centro da área
+        /// livre, ou seja, na origem da trilha. Hoje é o salão norte: o visitante
+        /// começa de frente para a mesa de madeira, com a TV e as lousas ao fundo.
+        /// O U ocupa x -2,2…2,8 e z 6,5…10,5 do modelo, livre entre a parede de
+        /// ripas (oeste), o banco junto ao vidro (x ≥ 2,97) e a mesa (z ≥ 10,62).
         /// </summary>
-        public static readonly Vector3 CentroNoSebraelab = new Vector3(0f, 0f, -13f);
+        public static readonly Vector3 CentroNoSebraelab = new Vector3(0.3f, 0f, 8.5f);
+
+        /// <summary>Onde o guia espera na abertura: atrás da mesa de madeira, entre ela e as lousas.</summary>
+        public static readonly Vector3 GuiaNoSebraelab = new Vector3(-0.22f, 0f, 11.76f);
+
+        /// <summary>Converte um ponto do modelo do Sebraelab para o referencial da trilha.</summary>
+        public static Vector3 DoSebraelab(Vector3 pontoNoModelo) => pontoNoModelo - CentroNoSebraelab;
+
+        /// <summary>Camada dos colisores do cenário (paredes, móveis), usados no modo desktop.</summary>
+        public const int CamadaCenario = 6;
 
         /// <summary>Raio em que a cabeça do visitante conta como "na marca".</summary>
         public const float RaioMarca = 0.6f;

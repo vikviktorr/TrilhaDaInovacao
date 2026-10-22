@@ -279,9 +279,10 @@ namespace TrilhaDaInovacao.EditorTools
             pontos.Add(LayoutTrilha.Saida + Vector3.up * 0.004f);
             Linha("Trilha no piso", sala, pontos.ToArray(), 0.035f, new Color(0.25f, 0.6f, 1f, 0.8f), false);
 
-            // Linha do tempo 1986–2025 (vira para o visitante).
+            // Linha do tempo 1986–2025 (vira para o visitante). Fica à esquerda da
+            // marca de início, fora do U, para não esconder a mesa e o guia atrás dela.
             var linhaGo = new GameObject("Linha do tempo");
-            linhaGo.transform.position = new Vector3(-1.25f, 1.6f, -0.15f);
+            linhaGo.transform.position = new Vector3(-2.9f, 1.6f, 0f);
             linhaGo.AddComponent<EncararUsuario>();
             Bloco("Painel", linhaGo.transform, new Vector3(0f, 0f, 0.03f), new Vector3(1.6f, 0.78f, 0.03f),
                 Opaco("HubPainel", new Color(0.06f, 0.1f, 0.2f)));
@@ -324,7 +325,8 @@ namespace TrilhaDaInovacao.EditorTools
 
             var sons = Fonte("Sons", null, LayoutTrilha.Marcas[6] + Vector3.up, false);
 
-            var abertura = Sequencia<Cena0Abertura>("Cena 0 · Abertura", 0, 0);
+            // Na abertura o guia espera atrás da mesa de madeira do Sebraelab.
+            var abertura = Sequencia<Cena0Abertura>("Cena 0 · Abertura", 0, 0, LayoutTrilha.DoSebraelab(LayoutTrilha.GuiaNoSebraelab));
             abertura.linhaDoTempo = linhaDoTempo;
             abertura.botaoComecar = botao;
             abertura.creditos = creditos;
@@ -393,7 +395,7 @@ namespace TrilhaDaInovacao.EditorTools
             {
                 case 0: return LayoutTrilha.Local(0, 0.9f, 0f, 1.25f);
                 case 1: return LayoutTrilha.Local(1, -1.0f, 0f, 1.0f);
-                case 3: return LayoutTrilha.Local(3, -1.35f, 0f, 0.9f);
+                case 3: return LayoutTrilha.Local(3, -1.2f, 0f, 0.25f);   // à frente da cadeira, não sobre ela
                 case 4: return LayoutTrilha.Local(4, 1.25f, 0f, 0.6f);
                 default: return LayoutTrilha.Local(marca, -0.75f, 0f, 0.95f);
             }
@@ -622,7 +624,11 @@ namespace TrilhaDaInovacao.EditorTools
 
         static string Salvar(UnityEngine.SceneManagement.Scene cena, string nome)
         {
-            if (nome != LayoutTrilha.CenaBootstrap) MesclarEstaticos(cena, nome);
+            if (nome != LayoutTrilha.CenaBootstrap)
+            {
+                AuditarSobreposicoes(cena, nome);
+                MesclarEstaticos(cena, nome);
+            }
             var caminho = $"{PastaCenas}/{nome}.unity";
             EditorSceneManager.SaveScene(cena, caminho);
             return caminho;
