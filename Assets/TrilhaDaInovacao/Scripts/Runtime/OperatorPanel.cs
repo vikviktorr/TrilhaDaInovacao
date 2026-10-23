@@ -97,11 +97,13 @@ namespace TrilhaDaInovacao
         {
             if (origem == null || !PlayerPrefs.HasKey(ChaveCalibracao)) return;
             var partes = PlayerPrefs.GetString(ChaveCalibracao).Split(';');
-            if (partes.Length != 3) return;
+            // Valor corrompido não pode travar o início da visita.
+            if (partes.Length != 3 ||
+                !float.TryParse(partes[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var x) ||
+                !float.TryParse(partes[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var z) ||
+                !float.TryParse(partes[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var giro))
+                return;
 
-            var x = float.Parse(partes[0], CultureInfo.InvariantCulture);
-            var z = float.Parse(partes[1], CultureInfo.InvariantCulture);
-            var giro = float.Parse(partes[2], CultureInfo.InvariantCulture);
             var t = origem.transform;
             t.SetPositionAndRotation(new Vector3(x, t.position.y, z), Quaternion.Euler(0f, giro, 0f));
         }

@@ -44,6 +44,7 @@ namespace TrilhaDaInovacao
         bool pularSolicitado;
         int falaAtual;
         string cenaCarregada;
+        AsyncOperation cargaPendente;
         bool tour;
         bool qa;
         string pastaTour;
@@ -116,7 +117,11 @@ namespace TrilhaDaInovacao
 
         public void Reiniciar()
         {
-            if (visita != null) StopCoroutine(visita);
+            // Antes do Start terminar (XR ainda iniciando) não há visita a reiniciar.
+            if (visita == null) return;
+
+            // Para também as falas soltas (dica de caminhar) e o laço da visita.
+            StopAllCoroutines();
             PararCena();
             registro.EncerrarVisita(false);
             guia.Falando = false;
@@ -226,6 +231,7 @@ namespace TrilhaDaInovacao
             {
                 yield return DescarregarEpocas();
                 var carga = SceneManager.LoadSceneAsync(nova, LoadSceneMode.Additive);
+                cargaPendente = carga;
                 if (carga == null)
                 {
                     Debug.LogError($"[Trilha da Inovação] Cena '{nova}' fora da Scene List.");
@@ -245,6 +251,11 @@ namespace TrilhaDaInovacao
 
         IEnumerator DescarregarEpocas()
         {
+            // Um reinício no meio de uma carga deixaria a cena chegar depois e
+            // ficar sobreposta à seguinte: espera ela terminar para descarregá-la.
+            while (cargaPendente != null && !cargaPendente.isDone) yield return null;
+            cargaPendente = null;
+
             var descarregar = new List<Scene>();
             for (var i = 0; i < SceneManager.sceneCount; i++)
             {
@@ -344,7 +355,9 @@ namespace TrilhaDaInovacao
             if (sequenciaEmCurso != null) sequenciaEmCurso.AoInterromper();
             cenaEmCurso = null;
             sequenciaEmCurso = null;
+            falaAtual++;
             guia.Falando = false;
+            if (guia.Voz != null) guia.Voz.Stop();
             legenda.Ocultar();
         }
 

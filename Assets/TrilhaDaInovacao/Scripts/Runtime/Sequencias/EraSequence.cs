@@ -19,6 +19,8 @@ namespace TrilhaDaInovacao
         protected Transform posicaoGuia;
 
         protected VisitDirector ctx;
+        PokeTrigger toqueEsperado;
+        ProximityTrigger proximidadeEsperada;
 
         public int Epoca => epoca;
         public SceneScript Roteiro => roteiro;
@@ -36,6 +38,14 @@ namespace TrilhaDaInovacao
         public virtual void AoInterromper()
         {
             StopAllCoroutines();
+
+            // As coroutines paradas não chegam à limpeza do fim da espera:
+            // sem isto o alvo seguiria brilhando e aceitando toque.
+            if (toqueEsperado != null) toqueEsperado.Desativar();
+            if (proximidadeEsperada != null) proximidadeEsperada.Desativar();
+            toqueEsperado = null;
+            proximidadeEsperada = null;
+            HandPoints.PontoSimulado = null;
         }
 
         protected void PosicionarGuia(Transform ponto)
@@ -60,6 +70,7 @@ namespace TrilhaDaInovacao
             Action marcar = () => feito = true;
             alvo.Tocado += marcar;
             alvo.Ativar();
+            toqueEsperado = alvo;
             var simulacao = ctx.QA ? StartCoroutine(SimularToque(alvo)) : null;
 
             yield return EsperarCom(() => feito, dica);
@@ -68,6 +79,7 @@ namespace TrilhaDaInovacao
             HandPoints.PontoSimulado = null;
             alvo.Tocado -= marcar;
             alvo.Desativar();
+            toqueEsperado = null;
         }
 
         /// <summary>
@@ -103,12 +115,14 @@ namespace TrilhaDaInovacao
             Action marcar = () => feito = true;
             alvo.Alcancado += marcar;
             alvo.Ativar();
+            proximidadeEsperada = alvo;
             if (ctx.QA) StartCoroutine(SimularPasso(alvo));
 
             yield return EsperarCom(() => feito, dica);
 
             alvo.Alcancado -= marcar;
             alvo.Desativar();
+            proximidadeEsperada = null;
         }
 
         /// <summary>QA: o visitante dá os passos até o gatilho de proximidade.</summary>
