@@ -42,3 +42,6 @@ Thumbs.db
 
 # Pacotes de terceiros completos (baixados por Ferramentas/baixar-modelos.sh)
 /Terceiros/
+
+# Python
+__pycache__/

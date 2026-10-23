@@ -4,7 +4,7 @@ using UnityEngine;
 namespace TrilhaDaInovacao
 {
     /// <summary>
-    /// Gatilho por aproximação (marca do radar na Cena 2, torre na Cena 5):
+    /// Gatilho por aproximação (torre na Cena 5):
     /// dispara quando a cabeça entra no raio, medido só no plano do chão.
     /// </summary>
     public class ProximityTrigger : MonoBehaviour

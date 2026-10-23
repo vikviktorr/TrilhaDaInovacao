@@ -456,6 +456,7 @@ namespace TrilhaDaInovacao.EditorTools
             {
                 case 0: return LayoutTrilha.Local(0, 0.9f, 0f, 1.25f);
                 case 1: return LayoutTrilha.Local(1, -1.0f, 0f, 1.0f);
+                case 2: return LayoutTrilha.Local(2, -1.0f, 0f, 0.7f);    // ao lado do console do radar
                 case 3: return LayoutTrilha.Local(3, -1.2f, 0f, 0.25f);   // à frente da cadeira, não sobre ela
                 case 4: return LayoutTrilha.Local(4, 1.25f, 0f, 0.6f);
                 default: return LayoutTrilha.Local(marca, -0.75f, 0f, 0.95f);

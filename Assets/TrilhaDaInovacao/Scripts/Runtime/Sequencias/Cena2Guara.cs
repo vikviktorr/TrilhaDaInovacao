@@ -6,8 +6,12 @@ namespace TrilhaDaInovacao
     /// <summary>Cena 2 — 1994, campanha Guará em Alcântara (1:00–1:35).</summary>
     public class Cena2Guara : EraSequence
     {
-        public ProximityTrigger marcaRadar;
-        public Pulsar brilhoMarca;
+        [Tooltip("Botão de ligar o radar, na mesa do console do operador.")]
+        public PokeTrigger botaoRadar;
+        public Pulsar brilhoBotao;
+        [Tooltip("Fósforo da PPI, eco e traço da A-scope: acendem ao ligar.")]
+        public GameObject telaLigada;
+        public Girar varredura;
         public Girar antena;
         public GameObject feixe;
         public Transform ionosfera;
@@ -24,19 +28,28 @@ namespace TrilhaDaInovacao
             Mostrar(feixe, false);
             Mostrar(ionosfera.gameObject, false);
             Mostrar(rotuloIonosfera, false);
-            brilhoMarca.Definir(false);
+            Mostrar(telaLigada, false);
+            varredura.ativo = false;
+            brilhoBotao.Definir(false);
 
             yield return Dizer("intro");
-            brilhoMarca.Definir(true);
-            ctx.Enquadrar(marcaRadar.transform.position);
+            brilhoBotao.Definir(true);
+            ctx.Enquadrar(botaoRadar.transform.position);
             yield return Dizer("pesquisadores");
 
-            yield return EsperarProximidade(marcaRadar, "dica");
-            brilhoMarca.Definir(false);
+            yield return EsperarToque(botaoRadar, "dica");
+            brilhoBotao.Definir(false);
 
+            // A tela PPI acende e a varredura gira junto com a antena lá fora.
+            Mostrar(telaLigada, true);
+            varredura.ativo = true;
             antena.ativo = true;
             Mostrar(feixe, true);
             StartCoroutine(Bipar());
+            ctx.Enquadrar(varredura.transform.position);
+            yield return null;
+            ctx.Capturar("1994-radar");
+            yield return null;
             StartCoroutine(Surgir(ionosfera, 1.5f));
             Mostrar(rotuloIonosfera, true);
             StartCoroutine(trajetoria.Desenhar(5f));

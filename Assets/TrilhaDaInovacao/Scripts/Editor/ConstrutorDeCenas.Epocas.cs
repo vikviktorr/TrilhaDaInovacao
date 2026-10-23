@@ -319,6 +319,82 @@ namespace TrilhaDaInovacao.EditorTools
         // ==================================================================
         // Cena 2 — 1994, Campanha Guará em Alcântara
         // ==================================================================
+        /// <summary>
+        /// Console de radar dos anos 1970–90: tela PPI redonda (o radar visto de cima,
+        /// com a varredura girando junto da antena), A-scope, medidores e lâmpadas. O
+        /// botão de ligar, a tela acesa e a varredura são peças do Unity sobre o modelo.
+        /// Cotas do modelo no Blender (x, y, z) viram (x, z, y) aqui, com o giro de 180°.
+        /// </summary>
+        static (PokeTrigger botao, Pulsar brilho, GameObject tela, Girar varredura) ConsoleRadar1994(Transform q, Vector3 posicao)
+        {
+            var raiz = new GameObject("Console do radar").transform;
+            raiz.SetParent(q, false);
+            raiz.localPosition = posicao;
+            var modelo = Modelo("Guara/console-radar", raiz, Vector3.zero, 180f, 1.54f);
+            // Modelo() centra o bbox; as cotas abaixo partem da origem do Blender.
+            var origem = modelo != null ? modelo.transform.localPosition : Vector3.zero;
+            if (modelo == null)
+            {
+                var cinza = Opaco("1994Console", new Color(0.6f, 0.62f, 0.58f));
+                Bloco("Gabinete", raiz, new Vector3(0f, 0.39f, 0f), new Vector3(1.24f, 0.78f, 0.7f), cinza);
+                Bloco("Painel", raiz, new Vector3(0f, 1.14f, 0.2f), new Vector3(1.2f, 0.72f, 0.3f), cinza);
+            }
+
+            // Painel inclinado: de (z 0,02; y 0,78) a (z 0,25; y 1,50), normal para o visitante.
+            Vector3 NoPainel(float u, float s) => origem + new Vector3(u, 0.78f + 0.72f * s, 0.02f + 0.23f * s);
+            var normal = new Vector3(0f, 0.23f, -0.72f).normalized;
+            var deitado = Quaternion.FromToRotation(Vector3.up, normal);
+
+            // Botão de ligar o transmissor, no aro amarelo e preto da caixa de comando.
+            var alvo = new GameObject("Botão ligar").transform;
+            alvo.SetParent(raiz, false);
+            alvo.localPosition = origem + new Vector3(0.42f, 0.91f, -0.24f);
+            var tampa = Bloco("Tampa", alvo, new Vector3(0f, 0.015f, 0f), new Vector3(0.14f, 0.015f, 0.14f),
+                Opaco("1994BotaoRadar", new Color(0.85f, 0.12f, 0.1f), new Color(0.3f, 0.03f, 0.02f)), PrimitiveType.Cylinder);
+            var colisor = alvo.gameObject.AddComponent<BoxCollider>();
+            colisor.center = new Vector3(0f, 0.04f, 0f);
+            colisor.size = new Vector3(0.2f, 0.12f, 0.2f);
+            var botao = alvo.gameObject.AddComponent<PokeTrigger>();
+            botao.ConfigurarNoEditor(new[] { tampa.GetComponent<Renderer>() }, new Color(1f, 0.5f, 0.4f));
+            var brilho = AdicionarPulsar(tampa, new Color(1f, 0.35f, 0.2f), 1.6f, 2f);
+            var rotulo = Texto("Rótulo ligar", raiz, origem + new Vector3(0.42f, 1.07f, -0.26f), "LIGAR RADAR", 0.045f, 0.4f, Color.white);
+            rotulo.fontStyle = FontStyles.Bold;
+            rotulo.gameObject.AddComponent<EncararUsuario>();
+
+            // Tela acesa: o fósforo da PPI, a varredura e um eco; o traço da A-scope.
+            var tela = new GameObject("Tela ligada").transform;
+            tela.SetParent(raiz, false);
+            var fosforo = Opaco("1994Fosforo", new Color(0.05f, 0.25f, 0.1f), new Color(0.05f, 0.35f, 0.12f));
+            var verde = Opaco("1994Varredura", new Color(0.4f, 1f, 0.5f), new Color(0.35f, 1f, 0.45f));
+            var ppi = NoPainel(-0.27f, 0.55f);
+            Bloco("Fósforo PPI", tela, ppi + normal * 0.007f, new Vector3(0.33f, 0.0005f, 0.33f), fosforo,
+                PrimitiveType.Cylinder, deitado.eulerAngles);
+            var pivo = new GameObject("Varredura").transform;
+            pivo.SetParent(tela, false);
+            pivo.SetLocalPositionAndRotation(ppi + normal * 0.012f, deitado);
+            Bloco("Raio", pivo, new Vector3(0f, 0f, 0.08f), new Vector3(0.008f, 0.002f, 0.16f), verde);
+            var varredura = pivo.gameObject.AddComponent<Girar>();
+            varredura.grausPorSegundo = 60f;   // junto com a antena (10 rpm)
+            varredura.ativo = false;
+            Bloco("Eco", tela, ppi + normal * 0.012f + deitado * new Vector3(0.07f, 0f, 0.05f), Vector3.one * 0.014f,
+                verde, PrimitiveType.Sphere);
+
+            var traco = new GameObject("Traço A-scope").transform;
+            traco.SetParent(tela, false);
+            traco.SetLocalPositionAndRotation(NoPainel(0.22f, 0.62f) + normal * 0.027f, deitado);
+            var pontos = new Vector3[12];
+            for (var i = 0; i < pontos.Length; i++)
+            {
+                var x = -0.13f + 0.26f * i / (pontos.Length - 1f);
+                var pulso = i == 1 ? 0.06f : i == 7 ? 0.035f : 0f;   // pulso transmitido e o eco
+                pontos[i] = new Vector3(x, 0f, -0.05f + pulso);
+            }
+            Linha("Traço", traco, pontos, 0.004f, new Color(0.4f, 1f, 0.5f), true);
+            tela.gameObject.SetActive(false);
+
+            return (botao, brilho, tela.gameObject, varredura);
+        }
+
         static string Construir1994()
         {
             var cena = NovaCena();
@@ -338,19 +414,9 @@ namespace TrilhaDaInovacao.EditorTools
             // Restinga, palmeiras e antenas (modelos Kenney).
             Decorar1994(q);
 
-            // Marca do radar no piso.
-            var marcaGo = new GameObject("Marca do radar");
-            marcaGo.transform.SetParent(q, false);
-            marcaGo.transform.localPosition = new Vector3(0f, 0.01f, 0.6f);
-            var discoRadar = Bloco("Disco", marcaGo.transform, Vector3.zero, new Vector3(0.6f, 0.004f, 0.6f),
-                Opaco("1994MarcaRadar", new Color(0.3f, 0.2f, 0.1f), new Color(0.6f, 0.3f, 0.05f)), PrimitiveType.Cylinder);
-            var anel = Linha("Anel", marcaGo.transform, Circulo(0.3f, 48, 0.01f), 0.025f, new Color(1f, 0.6f, 0.2f), true);
-            anel.loop = true;
-            var rotuloMarca = Texto("RADAR", marcaGo.transform, new Vector3(0f, 0.012f, 0f), "RADAR", 0.08f, 0.6f, Color.white);
-            rotuloMarca.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            var proximidade = marcaGo.AddComponent<ProximityTrigger>();
-            proximidade.ConfigurarNoEditor(0.3f);
-            var brilhoMarca = AdicionarPulsar(discoRadar, new Color(1f, 0.55f, 0.15f), 2f, 1.5f);
+            // Console do operador de radar (Ferramentas/blender/console_radar.py): o
+            // visitante liga o radar no botão da mesa e a tela PPI mostra a varredura.
+            var console = ConsoleRadar1994(q, new Vector3(0.05f, 0f, 0.8f));
 
             // Antena do radar com o feixe que varre o céu.
             var antenaBase = new GameObject("Radar").transform;
@@ -434,8 +500,10 @@ namespace TrilhaDaInovacao.EditorTools
             var ambiente = Fonte("Vento e mar", q, q.TransformPoint(new Vector3(0f, 2f, 3f)), false);
 
             var seq = Sequencia<Cena2Guara>("Cena 2 · 1994 Guará", 2, 2);
-            seq.marcaRadar = proximidade;
-            seq.brilhoMarca = brilhoMarca;
+            seq.botaoRadar = console.botao;
+            seq.brilhoBotao = console.brilho;
+            seq.telaLigada = console.tela;
+            seq.varredura = console.varredura;
             seq.antena = girar;
             seq.feixe = feixe;
             seq.ionosfera = ionosfera.transform;

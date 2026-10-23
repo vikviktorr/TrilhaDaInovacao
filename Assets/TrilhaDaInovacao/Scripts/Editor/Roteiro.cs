@@ -31,7 +31,8 @@ namespace TrilhaDaInovacao.EditorTools
                 "O lançamento aconteceu, mas uma anomalia levou à perda da missão. O PION-BR2 não chegou à órbita.",
                 "O lançamento aconteceu, mas uma anomalia levou à perda da missão."),
             ("contagem", "Five, four, three, two, one", "Cinco, quatro, três, dois, um"),
-            ("siga", "Siga a luz no chão até a primeira marca.", "Um portal vai se abrir. Ele leva para 1986.")
+            ("siga", "Siga a luz no chão até a primeira marca.", "Um portal vai se abrir. Ele leva para 1986."),
+            ("dica", "Dê um passo até a marca do radar no chão.", "Toque no botão vermelho do console para ligar o radar.")
         };
 
         public static Dictionary<string, SceneScript> CriarOuAtualizar()
@@ -74,7 +75,7 @@ namespace TrilhaDaInovacao.EditorTools
                     {
                         ("intro", "Alcântara, 1994. Aqui acontece a campanha Guará."),
                         ("pesquisadores", "Pesquisadores do Brasil e dos Estados Unidos estudaram juntos essa região da atmosfera."),
-                        ("dica", "Dê um passo até a marca do radar no chão."),
+                        ("dica", "Toque no botão vermelho do console para ligar o radar."),
                         ("ionosfera", "Essa camada se chama ionosfera. Foguetes e instrumentos em terra a estudaram."),
                         ("fim", "O INPE e a NASA trabalharam juntos nessa missão. Próxima parada: 2009.")
                     }),

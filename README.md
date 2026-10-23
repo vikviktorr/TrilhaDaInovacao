@@ -17,7 +17,7 @@ O projeto da P1 (feira com estandes) continua no histórico do git, na tag `p1-f
 | --- | --- | --- | --- | --- |
 | 0 | Início | — | Abertura e calibração das mãos | Tocar "Começar" |
 | 1 | 1 | 1986 | Central Trópico-R da TELMA | Tocar o telefone |
-| 2 | 2 | 1994 | Campanha Guará, Alcântara | Pisar na marca do radar |
+| 2 | 2 | 1994 | Campanha Guará, Alcântara | Ligar o radar no console do operador |
 | 3 | 3 | 2009 | Rede Metropolitana de São Luís (RNP) | Tocar o ponto no mapa |
 | 4 | 4 | 2018 | Laboratório Aberto do SENAI | Tocar a lâmpada |
 | 5 | 5 | 2022 | 5G em 3,5 GHz | Aproximar-se da torre |
@@ -97,6 +97,17 @@ Os objetos históricos específicos (bastidores Trópico-R, telefones, HANBIT, S
 Ainda é preciso substituí-los por modelos feitos a partir de fotos.
 
 ## Como gerar
+
+Numa máquina nova, depois do `git clone`:
+
+```bash
+Ferramentas/montar.sh --verificar    # confere Unity, módulos e assets
+Ferramentas/montar.sh                # gera o build da plataforma atual (ou: linux windows quest)
+```
+
+O script não faz perguntas, então serve também para um agente de IA ou CI.
+Quando falta o editor, ele mostra o comando do Unity Hub que instala o Unity e os módulos certos; com `--instalar-unity`, ele mesmo roda esse comando.
+As instruções para agentes de IA estão em [`AGENTS.md`](AGENTS.md); o `CLAUDE.md` aponta para esse arquivo.
 
 Com o Unity 6000.0.83f1 (módulos Linux, Windows e Android) e o editor **fechado**:
 
