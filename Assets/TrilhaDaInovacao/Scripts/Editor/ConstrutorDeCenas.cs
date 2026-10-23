@@ -76,14 +76,15 @@ namespace TrilhaDaInovacao.EditorTools
             var rig = MontarRigVR(out var camera, out var offset);
             var cameraT = camera.transform;
 
-            // Véu de transição + ano grande, presos à câmera.
+            // Véu de transição preso à câmera. Fica na camada do túnel para os
+            // clarões aparecerem também quando a câmera só desenha o túnel.
             var veu = Bloco("Véu", cameraT, new Vector3(0f, 0f, 0.3f), new Vector3(2f, 2f, 1f),
                 Transparente("Veu", Color.black, true), PrimitiveType.Quad);
             veu.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
-            var ano = Texto("Ano", cameraT, new Vector3(0f, 0f, 0.27f), "1986", 0.07f, 0.5f, Color.white);
-            ano.fontStyle = FontStyles.Bold;
+            veu.layer = LayoutTrilha.CamadaTunel;
             var fader = cameraT.gameObject.AddComponent<ScreenFader>();
-            fader.ConfigurarNoEditor(veu.GetComponent<Renderer>(), ano);
+            fader.ConfigurarNoEditor(veu.GetComponent<Renderer>());
+            var tunel = MontarTunel(fader);
 
             // Legenda que segue o olhar.
             var legendaGo = new GameObject("Legenda");
@@ -119,7 +120,7 @@ namespace TrilhaDaInovacao.EditorTools
             var operador = visita.AddComponent<OperatorPanel>();
             operador.ConfigurarNoEditor(diretor, rig.GetComponent<XROrigin>());
             diretor.ConfigurarNoEditor(marcas, trilha, fader, legenda, guia, registro, desktop, operador, efeitos,
-                roteiros[Roteiro.Geral], portal);
+                roteiros[Roteiro.Geral], portal, tunel);
 
             var sala = new GameObject("Área livre do Sebraelab (room-scale)").AddComponent<AreaRoomScale>();
             sala.ConfigurarNoEditor(LayoutTrilha.LarguraSala, LayoutTrilha.ProfundidadeSala);
@@ -259,6 +260,108 @@ namespace TrilhaDaInovacao.EditorTools
             var componente = raiz.AddComponent<PortalEpoca>();
             componente.ConfigurarNoEditor(pedestal, botao, portal, abertura, veu.transform, faiscas, destino, meiaLargura);
             return componente;
+        }
+
+        /// <summary>
+        /// Túnel do tempo entre as épocas (ver <see cref="TunelDoTempo"/>), na camada
+        /// própria. As malhas do tubo e a textura em espiral são geradas em runtime;
+        /// os algarismos do ano vêm de Ferramentas/blender/digitos_3d.py.
+        /// </summary>
+        static TunelDoTempo MontarTunel(ScreenFader fader)
+        {
+            const float comprimento = 40f;
+            var raiz = new GameObject("Túnel do tempo");
+            var conteudo = new GameObject("Viagem").transform;
+            conteudo.SetParent(raiz.transform, false);
+
+            var paredes = Malha("Paredes", conteudo, Unlit("TunelParedes", Color.white));
+            var brilho = Malha("Brilho", conteudo, Particula("TunelBrilho", true));
+            Bloco("Fim do túnel", conteudo, new Vector3(0f, 0f, comprimento - 1f), Vector3.one * 3.5f,
+                Particula("TunelFim", true, new Color(0.9f, 0.95f, 1f)), PrimitiveType.Quad);
+
+            // Riscos de luz (hiperespaço): nascem numa coroa lá no fundo e vêm na direção do visitante.
+            var riscos = Particulas("Riscos de luz", conteudo, new Vector3(0f, 0f, comprimento * 0.75f), Particula("TunelRisco", true),
+                1.4f, 24f, 0.05f, 120f, new Color(0.85f, 0.92f, 1f), 0f, false, 0f, 300);
+            riscos.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            var forma = riscos.shape;
+            forma.radius = 2f;
+            forma.radiusThickness = 0.3f;
+            var cores = riscos.colorOverLifetime;
+            var gradiente = new Gradient();
+            gradiente.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.3f), new GradientAlphaKey(1f, 0.85f), new GradientAlphaKey(0f, 1f) });
+            cores.color = gradiente;
+            var rendererRiscos = riscos.GetComponent<ParticleSystemRenderer>();
+            rendererRiscos.renderMode = ParticleSystemRenderMode.Stretch;
+            rendererRiscos.velocityScale = 0.12f;
+            rendererRiscos.lengthScale = 2f;
+
+            // Anéis de luz que passam pelo visitante, alternando dourado e ciano.
+            var aneis = new LineRenderer[6];
+            var circulo = new Vector3[32];
+            for (var i = 0; i < circulo.Length; i++)
+            {
+                var a = i / (float)circulo.Length * Mathf.PI * 2f;
+                circulo[i] = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 1.5f;
+            }
+
+            for (var i = 0; i < aneis.Length; i++)
+            {
+                aneis[i] = Linha($"Anel {i + 1}", conteudo, circulo, 0.05f,
+                    i % 2 == 0 ? new Color(1f, 0.75f, 0.3f) : new Color(0.4f, 0.85f, 1f), true);
+                aneis[i].loop = true;
+            }
+
+            // O ano: quatro casas com os algarismos 3D, viradas para o visitante.
+            const string caminhoDigitos = PastaModelos + "Ano3D/digitos-3d";
+            var algarismos = new Mesh[10];
+            foreach (var asset in AssetDatabase.LoadAllAssetsAtPath(caminhoDigitos + ".fbx"))
+                if (asset is Mesh m && m.name.StartsWith("Digito") && int.TryParse(m.name.Substring(6), out var d) && d is >= 0 and <= 9)
+                    algarismos[d] = m;
+            if (System.Array.IndexOf(algarismos, null) >= 0)
+                Debug.LogWarning("[Trilha da Inovação] Faltam algarismos 3D. Rode blender -b -P Ferramentas/blender/digitos_3d.py.");
+
+            var ano = new GameObject("Ano").transform;
+            ano.SetParent(conteudo, false);
+            var materialAno = Unlit("Ano3D", Color.white, AssetDatabase.LoadAssetAtPath<Texture2D>(caminhoDigitos + "-paleta.png"));
+            // O "0" tem 1 unidade de altura; o FBX pode chegar em outra escala.
+            var unidade = algarismos[0] != null ? 1f / algarismos[0].bounds.size.y : 1f;
+            var casas = new MeshFilter[4];
+            for (var i = 0; i < casas.Length; i++)
+            {
+                casas[i] = Malha($"Casa {i + 1}", ano, materialAno);
+                casas[i].transform.localPosition = new Vector3((i - 1.5f) * 0.74f, -0.5f, 0f);
+                casas[i].transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                casas[i].transform.localScale = Vector3.one * unidade;
+                casas[i].sharedMesh = algarismos[i == 0 ? 1 : 9];
+            }
+
+            var halo = Bloco("Halo", ano, new Vector3(0f, 0f, 0.6f), new Vector3(4.4f, 2.4f, 1f),
+                Particula("TunelHalo", true, new Color(1f, 0.6f, 0.25f, 0.7f)), PrimitiveType.Quad);
+
+            foreach (var t in conteudo.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = LayoutTrilha.CamadaTunel;
+
+            var som = raiz.AddComponent<AudioSource>();
+            som.playOnAwake = false;
+            som.spatialBlend = 0f;
+
+            var componente = raiz.AddComponent<TunelDoTempo>();
+            componente.ConfigurarNoEditor(conteudo, fader, paredes, brilho, riscos, aneis, ano, casas, algarismos,
+                halo.GetComponent<Renderer>(), som);
+            return componente;
+        }
+
+        static MeshFilter Malha(string nome, Transform pai, Material material)
+        {
+            var go = new GameObject(nome);
+            go.transform.SetParent(pai, false);
+            var filtro = go.AddComponent<MeshFilter>();
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = material;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            return filtro;
         }
 
         /// <summary>
@@ -758,6 +861,18 @@ namespace TrilhaDaInovacao.EditorTools
                 m.SetFloat("_Smoothness", 0.6f);
             }
 
+            m.SetFloat("_Cull", (float)CullMode.Off);
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
+        /// <summary>Opaco sem luz: a cor (e a textura) aparecem iguais em qualquer época.</summary>
+        static Material Unlit(string nome, Color cor, Texture textura = null)
+        {
+            if (materiais.TryGetValue(nome, out var pronto)) return pronto;
+            var m = ObterMaterial(nome, "Universal Render Pipeline/Unlit");
+            m.SetColor("_BaseColor", cor);
+            m.SetTexture("_BaseMap", textura);
             m.SetFloat("_Cull", (float)CullMode.Off);
             EditorUtility.SetDirty(m);
             return m;

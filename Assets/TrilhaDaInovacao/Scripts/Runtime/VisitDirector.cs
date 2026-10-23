@@ -27,6 +27,7 @@ namespace TrilhaDaInovacao
         [SerializeField] OperatorPanel operador;
         [SerializeField] AudioSource efeitos;
         [SerializeField] PortalEpoca portal;
+        [SerializeField] TunelDoTempo tunel;
         [SerializeField, Tooltip("Falas comuns a todas as cenas (dica de caminhar).")]
         SceneScript roteiroGeral;
 
@@ -62,10 +63,12 @@ namespace TrilhaDaInovacao
         PausaVisita pausa;
         int visitasQA = 1;
         int visitasFeitas;
+        string anoAtual;
 
         public GuideCharacter Guia => guia;
         public SubtitleController Legenda => legenda;
         public ScreenFader Fader => fader;
+        public TunelDoTempo Tunel => tunel;
         public SessionLogger Registro => registro;
         public AudioSource Efeitos => efeitos;
         public bool Tour => tour;
@@ -96,6 +99,7 @@ namespace TrilhaDaInovacao
                 Directory.CreateDirectory(pastaTour);
             }
 
+            tunel.Rapido = tour && !qa;
             pausa = gameObject.AddComponent<PausaVisita>();
             if (qa)
             {
@@ -179,6 +183,7 @@ namespace TrilhaDaInovacao
             guia.Falando = false;
             legenda.Ocultar();
             portal.Esconder();
+            tunel.Esconder();
             HandPoints.PontoSimulado = null;
             visita = StartCoroutine(Laco());
         }
@@ -199,6 +204,7 @@ namespace TrilhaDaInovacao
             yield return DescarregarEpocas();
 
             registro.IniciarVisita(XRStartup.XRAtivo ? "vr" : tour ? "tour" : "desktop");
+            anoAtual = AnoPresente;
 
             yield return TrocarCena(LayoutTrilha.Inicio, null);
             if (!XRStartup.XRAtivo) desktop.Posicionar(LayoutTrilha.Marcas[0], LayoutTrilha.Foco(0));
@@ -231,7 +237,7 @@ namespace TrilhaDaInovacao
             if (saida != null) saida.Definir(EstadoMarca.Proxima);
             yield return Passagem(LayoutTrilha.TotalEpocas, LayoutTrilha.Saida, true);
             if (saida != null) saida.Definir(EstadoMarca.Visitada);
-            yield return TrocarCena(LayoutTrilha.Inicio, null);
+            yield return TrocarCena(LayoutTrilha.Inicio, AnoPresente);
             portal.Esconder();
             yield return fader.Abrir();
             yield return Executar(LayoutTrilha.TotalEpocas + 1);
@@ -374,14 +380,18 @@ namespace TrilhaDaInovacao
             HandPoints.PontoSimulado = fim;
         }
 
-        /// <summary>Fecha o véu, troca a cena aditiva e mostra o ano (o caller abre).</summary>
+        /// <summary>O ano da volta ao Sebraelab: a visita começa e termina no presente.</summary>
+        static string AnoPresente => DateTime.Now.Year.ToString();
+
+        /// <summary>
+        /// Troca a cena aditiva. Com ano, a troca acontece dentro do túnel do tempo;
+        /// sem ano (início da visita), atrás do véu preto. O caller abre o véu.
+        /// </summary>
         IEnumerator TrocarCena(int marca, string ano)
         {
             var temAno = !string.IsNullOrEmpty(ano);
-            efeitos.PlayOneShot(ProceduralAudio.Obter("whoosh"), 0.6f);
-            yield return fader.Fechar(temAno ? Color.white : Color.black);
-            var inicio = Time.time;
-            if (temAno) fader.MostrarAno(ano);
+            if (temAno) yield return EntrarNoTunel(ano);
+            else yield return fader.Fechar(Color.black);
 
             legenda.Ocultar();
             guia.Falando = false;
@@ -408,7 +418,24 @@ namespace TrilhaDaInovacao
                 }
             }
 
-            while (temAno && Time.time - inicio < fader.TempoDoAno) yield return null;
+            if (temAno) yield return SairDoTunel();
+        }
+
+        /// <summary>Clarão e túnel do tempo, do ano atual da visita até <paramref name="ano"/>.</summary>
+        public IEnumerator EntrarNoTunel(string ano)
+        {
+            efeitos.PlayOneShot(ProceduralAudio.Obter("whoosh"), 0.6f);
+            var partida = anoAtual;
+            anoAtual = ano;
+            yield return tunel.Entrar(partida, ano);
+        }
+
+        /// <summary>Espera o ano travar e sai do túnel num clarão branco (o caller abre o véu).</summary>
+        public IEnumerator SairDoTunel()
+        {
+            while (tunel.Ativo && !tunel.Chegou) yield return null;
+            Capturar($"tunel-{anoAtual}");
+            yield return tunel.Sair();
         }
 
         IEnumerator DescarregarEpocas()
@@ -472,6 +499,13 @@ namespace TrilhaDaInovacao
                 {
                     registro.Gatilho("pulado");
                     PararCena();
+                    // Pulo no meio de uma viagem dentro da cena (2023 → 2025).
+                    if (tunel.Ativo)
+                    {
+                        tunel.Esconder();
+                        yield return fader.Abrir();
+                    }
+
                     break;
                 }
 
@@ -651,9 +685,11 @@ namespace TrilhaDaInovacao
 
 #if UNITY_EDITOR
         public void ConfigurarNoEditor(FloorMarker[] m, LineRenderer trilha, ScreenFader f, SubtitleController l,
-            GuideCharacter g, SessionLogger r, DesktopRig d, OperatorPanel o, AudioSource e, SceneScript geral, PortalEpoca p)
+            GuideCharacter g, SessionLogger r, DesktopRig d, OperatorPanel o, AudioSource e, SceneScript geral, PortalEpoca p,
+            TunelDoTempo t)
         {
             portal = p;
+            tunel = t;
             marcas = m;
             trilhaDeLuz = trilha;
             fader = f;

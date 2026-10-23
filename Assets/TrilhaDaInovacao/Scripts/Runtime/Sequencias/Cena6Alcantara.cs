@@ -41,14 +41,12 @@ namespace TrilhaDaInovacao
             ctx.Capturar("2023-sisnav");
 
             // Segunda virada de época dentro da mesma cena.
-            ctx.Som("whoosh", 0.6f);
-            yield return ctx.Fader.Fechar(Color.white);
-            ctx.Fader.MostrarAno("2025");
+            yield return ctx.EntrarNoTunel("2025");
             Mostrar(parte2023, false);
             Mostrar(parte2025, true);
             PosicionarGuia(posicaoGuia2025);
             Cena1Telma.Tocar(ambiente, "vento", true, 0.5f);
-            yield return Esperar(ctx.Fader.TempoDoAno);
+            yield return ctx.SairDoTunel();
             yield return ctx.Fader.Abrir();
 
             Mostrar(avisoReconstituicao, true);

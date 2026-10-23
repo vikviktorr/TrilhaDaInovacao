@@ -37,6 +37,7 @@ namespace TrilhaDaInovacao
                 "impressora" => Gerar(nome, 2f, t =>
                     0.15f * Seno(220f + 40f * Mathf.Sin(t * 6f * Mathf.PI), t)),
                 "whoosh" => Whoosh(nome),
+                "tunel" => Tunel(nome),
                 // Portal abrindo: acorde que sobe, com um tremolo cintilante.
                 "portal" => Gerar(nome, 1.8f, t =>
                 {
@@ -142,6 +143,36 @@ namespace TrilhaDaInovacao
                 var envelope = Mathf.Min(1f, t / 0.01f) * Mathf.Exp(-t * 1.1f);
                 var ronco = 0.35f * Seno(38f, t) * Mathf.Exp(-t * 0.8f);
                 dados[i] = 0.75f * (filtrado * 3f + ronco) * envelope;
+            }
+
+            var clip = AudioClip.Create(nome, total, 1, Taxa, false);
+            clip.SetData(dados, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// Túnel do tempo: vento que acelera e freia, um ronco grave que sobe e
+        /// um cintilado agudo, 4,5 s (a viagem com os clarões).
+        /// </summary>
+        static AudioClip Tunel(string nome)
+        {
+            const float duracao = 4.5f;
+            var total = Mathf.CeilToInt(duracao * Taxa);
+            var dados = new float[total];
+            var rng = new System.Random(2025);
+            var filtrado = 0f;
+            var fase = 0f;
+
+            for (var i = 0; i < total; i++)
+            {
+                var t = i / (float)Taxa;
+                var k = t / duracao;
+                var corte = Mathf.Lerp(0.02f, 0.12f, Mathf.Sin(Mathf.PI * Mathf.Min(1f, k * 1.4f)));
+                filtrado += corte * ((float)(rng.NextDouble() * 2.0 - 1.0) - filtrado);
+                fase += 2f * Mathf.PI * Mathf.Lerp(48f, 110f, k) / Taxa;
+                var ronco = 0.35f * (Mathf.Sin(fase) + 0.4f * Mathf.Sin(2f * fase));
+                var cintilado = 0.06f * Seno(1760f + 400f * Mathf.Sin(2f * Mathf.PI * 0.7f * t), t) * (0.5f + 0.5f * Mathf.Sin(2f * Mathf.PI * 11f * t));
+                dados[i] = (1.6f * filtrado + ronco + cintilado) * Envelope(t, duracao, 0.15f, 1.2f);
             }
 
             var clip = AudioClip.Create(nome, total, 1, Taxa, false);

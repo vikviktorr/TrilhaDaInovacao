@@ -33,6 +33,9 @@ namespace TrilhaDaInovacao
         /// <summary>Camada dos colisores do cenário (paredes, móveis), usados no modo desktop.</summary>
         public const int CamadaCenario = 6;
 
+        /// <summary>Camada do túnel do tempo: durante a viagem a câmera desenha só ela.</summary>
+        public const int CamadaTunel = 7;
+
         /// <summary>Raio em que a cabeça do visitante conta como "na marca".</summary>
         public const float RaioMarca = 0.6f;
 
