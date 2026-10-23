@@ -73,6 +73,7 @@ Pela linha de comando, com o editor fechado, o equivalente é `Ferramentas/build
 | Época ou hub sem luz, rig ou interface | As cenas são aditivas e foram abertas sozinhas | Rode sempre a partir de `00_Bootstrap.unity`. |
 | Materiais rosa, modelos faltando ou erros que somem depois | A primeira importação (`Library/` vazia) ainda está rodando | Espere a importação terminar (5 a 20 minutos) e rode **Trilha da Inovação → 0 · Configurar tudo (XR + cenas)**. |
 | Projeto "novo" e lento logo depois de um `git clone` | O clone foi feito dentro da pasta de outro clone e o Hub abriu o aninhado | Abra a pasta do repositório que já tem a `Library/` importada e apague o clone aninhado. |
+| Game view preta no Play e `DllNotFoundException: UnityOpenXR` | O pacote OpenXR não tem biblioteca nativa para Linux; a falha derrubava a corrotina da visita | O `XRStartup` já pula o OpenXR no Linux e entra em modo desktop. VR pelo editor só no Windows (Link). |
 | Aviso `CS0618 ... k_SettingsKey is obsolete` em `ConfiguradorXR.cs` | API depreciada do XR Plug-in Management 4.7 | Só aviso; não atrapalha. |
 | Pasta vazia `Assets/XR 1` | Criada pelo editor durante a configuração do XR | Pode ignorar; pasta vazia não entra no git. |
 | `GLib-GIO-CRITICAL`, `libxml2.so.16` ou shaders `Terrain/Lit`/`SpeedTree7` "not found" no `Editor.log` | Mensagens normais do Unity com URP no Linux | Pode ignorar. |

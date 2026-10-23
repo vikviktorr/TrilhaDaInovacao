@@ -79,6 +79,14 @@ namespace TrilhaDaInovacao
                 yield break;
             }
 
+            // O pacote OpenXR não traz a biblioteca nativa para Linux: tentar
+            // inicializar lança DllNotFoundException e derruba a corrotina.
+            if (Application.platform == RuntimePlatform.LinuxEditor || Application.platform == RuntimePlatform.LinuxPlayer)
+            {
+                Concluir(false, "OpenXR não suportado no Linux");
+                yield break;
+            }
+
             yield return gerente.InitializeLoader();
 
             if (gerente.activeLoader == null)
