@@ -166,7 +166,7 @@ A medição de desempenho vale só no APK, rodando no próprio óculos.
 - **Vozes (dublagem por IA):** os arquivos `.ogg` ficam em `Assets/TrilhaDaInovacao/Voz/` e já estão no repositório.
   Para refazer uma fala, rode o setup para gravar o `.asset`, depois `Ferramentas/voz/gerar_vozes.py` (Piper e ffmpeg), e o setup de novo para ligar o áudio.
   Sem o Piper, deixe como está: a legenda aparece sem a voz nova.
-- **Modelos próprios** (telefone, rádio, impressora, drone, foguete, console do radar e outros) são scripts Blender em `Ferramentas/blender/*.py`, que exportam FBX para `Assets/TrilhaDaInovacao/Modelos/`.
+- **Modelos próprios** (telefone, rádio, impressora, drone, foguete, console e radar CUPRI e outros) são scripts Blender em `Ferramentas/blender/*.py`, que exportam FBX para `Assets/TrilhaDaInovacao/Modelos/`.
   Para refazer um, rode `blender -b -P Ferramentas/blender/<script>.py`.
 - **Orçamento do Quest 2:** até ~100 draw calls por cena.
   O setup mescla os renderers estáticos.

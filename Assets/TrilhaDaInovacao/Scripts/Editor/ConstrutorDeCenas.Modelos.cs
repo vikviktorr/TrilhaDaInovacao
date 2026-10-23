@@ -488,109 +488,6 @@ namespace TrilhaDaInovacao.EditorTools
         // Radar: pedestal fixo + cabeça giratória.
         // ------------------------------------------------------------------
 
-        /// <summary>
-        /// O satelliteDish_large da Kenney vem numa malha só. Corta a malha no
-        /// rolamento do topo do pedestal: bloco da base e pedestal ficam no
-        /// modelo (fixos); garfo e refletor vão para um objeto filho de
-        /// <paramref name="giro"/>, que é posto sobre o eixo do pedestal. Devolve
-        /// (no mundo) o centro do prato e a direção para onde ele aponta.
-        /// </summary>
-        static void SepararCabecaDoRadar(GameObject modelo, Transform giro, out Vector3 centroPrato, out Vector3 eixoPrato)
-        {
-            var filtro = modelo.GetComponentInChildren<MeshFilter>();
-            var renderer = filtro.GetComponent<MeshRenderer>();
-            var original = filtro.sharedMesh;
-            var vertices = original.vertices;
-            var b = original.bounds;
-            var h = b.size.y;
-
-            // Proporções do FBX (altura total 8,14): bloco da base até 0,5; pedestal
-            // tronco-cônico até o rolamento em 3,73, com meia-largura 1,0 no topo.
-            var topoBloco = b.min.y + h * (0.5f / 8.14f) + h * 0.005f;
-            var rolamento = b.min.y + h * (3.73f / 8.14f) + h * 0.005f;
-            var meiaLargura = h * (1f / 8.14f) + h * 0.005f;
-
-            var bloco = new Bounds();
-            var primeiro = true;
-            foreach (var v in vertices)
-            {
-                if (v.y > topoBloco) continue;
-                if (primeiro) { bloco = new Bounds(v, Vector3.zero); primeiro = false; }
-                else bloco.Encapsulate(v);
-            }
-
-            var eixo = bloco.center;
-            var naBase = new bool[vertices.Length];
-            for (var i = 0; i < vertices.Length; i++)
-            {
-                var v = vertices[i];
-                naBase[i] = v.y <= topoBloco ||
-                            v.y <= rolamento && Mathf.Abs(v.x - eixo.x) <= meiaLargura && Mathf.Abs(v.z - eixo.z) <= meiaLargura;
-            }
-
-            filtro.sharedMesh = ParteDaMalha(original, naBase, true, "Radar pedestal");
-            var cabeca = new GameObject("Cabeça do radar");
-            cabeca.transform.SetParent(filtro.transform, false);
-            cabeca.AddComponent<MeshFilter>().sharedMesh = ParteDaMalha(original, naBase, false, "Radar cabeça");
-            var mr = cabeca.AddComponent<MeshRenderer>();
-            mr.sharedMaterials = renderer.sharedMaterials;
-            mr.shadowCastingMode = renderer.shadowCastingMode;
-            mr.receiveShadows = renderer.receiveShadows;
-
-            giro.position = filtro.transform.TransformPoint(new Vector3(eixo.x, rolamento, eixo.z));
-            cabeca.transform.SetParent(giro, true);
-
-            // Borda do prato: o ponto mais alto (atrás) e o mais baixo (na frente,
-            // 2,93 de altura e 2,4 à frente do eixo). O eixo do refletor é
-            // perpendicular à corda entre os dois, apontando para cima.
-            var topo = vertices[0];
-            foreach (var v in vertices) if (v.y > topo.y) topo = v;
-            var frente = Mathf.Sign(eixo.z - topo.z);
-            var baixo = new Vector3(eixo.x, b.min.y + h * (2.93f / 8.14f), eixo.z + frente * h * (2.4f / 8.14f));
-            var corda = baixo - topo;
-            var normal = new Vector3(0f, Mathf.Abs(corda.z), frente * Mathf.Abs(corda.y)).normalized;
-            centroPrato = filtro.transform.TransformPoint((topo + baixo) * 0.5f);
-            eixoPrato = filtro.transform.TransformDirection(normal).normalized;
-        }
-
-        /// <summary>Cópia da malha só com os triângulos de um lado do corte, salva como asset.</summary>
-        static Mesh ParteDaMalha(Mesh original, bool[] naBase, bool base_, string nome)
-        {
-            var pasta = $"{PastaGerado}/Malhas";
-            System.IO.Directory.CreateDirectory(pasta);
-            var caminho = $"{pasta}/{nome}.asset";
-            var malha = AssetDatabase.LoadAssetAtPath<Mesh>(caminho);
-            if (malha == null)
-            {
-                malha = new Mesh();
-                AssetDatabase.CreateAsset(malha, caminho);
-            }
-
-            malha.Clear();
-            malha.name = nome;
-            malha.vertices = original.vertices;
-            malha.normals = original.normals;
-            malha.uv = original.uv;
-            malha.colors = original.colors;
-            malha.subMeshCount = original.subMeshCount;
-            for (var s = 0; s < original.subMeshCount; s++)
-            {
-                var tris = original.GetTriangles(s);
-                var parte = new List<int>();
-                for (var i = 0; i < tris.Length; i += 3)
-                {
-                    var ehBase = naBase[tris[i]] && naBase[tris[i + 1]] && naBase[tris[i + 2]];
-                    if (ehBase == base_) parte.AddRange(new[] { tris[i], tris[i + 1], tris[i + 2] });
-                }
-
-                malha.SetTriangles(parte, s);
-            }
-
-            malha.RecalculateBounds();
-            EditorUtility.SetDirty(malha);
-            return malha;
-        }
-
         // ------------------------------------------------------------------
         // Hub: o Sebraelab de verdade (pacote SebraeLabUnityAssets).
         // ------------------------------------------------------------------
@@ -750,10 +647,34 @@ namespace TrilhaDaInovacao.EditorTools
         }
 
         // ------------------------------------------------------------------
-        // 1994: vegetação de restinga, palmeiras e estação de instrumentos.
+        // 1994: vegetação de restinga, palmeiras e o campo do radar CUPRI.
         // ------------------------------------------------------------------
-        /// <summary>Base do radar, atrás do corrimão do deck (z = 2,55) com folga para o prato girar.</summary>
-        static readonly Vector3 PosicaoRadar1994 = new Vector3(2.6f, 0f, 3.75f);
+        /// <summary>Centro do piso do abrigo do radar CUPRI, à direita do deck (origem do modelo).</summary>
+        static readonly Vector3 PosicaoAbrigo1994 = new Vector3(6f, 0f, 9f);
+
+        /// <summary>
+        /// Entre os dois arranjos 4 × 4 de Yagis: (7; 11) do abrigo no modelo
+        /// (Ferramentas/blender/radar_cupri.py, ARRANJO_X e ARRANJO_Y).
+        /// </summary>
+        static readonly Vector3 CentroArranjos1994 = PosicaoAbrigo1994 + new Vector3(7f, 0f, 11f);
+
+        /// <summary>Caixa de entrada de cabos, na parede do abrigo voltada ao deck.</summary>
+        static readonly Vector3 EntradaCabos1994 = PosicaoAbrigo1994 + new Vector3(-1.28f, 0.6f, 1.4f);
+
+        /// <summary>
+        /// Percurso no chão dos cabos do abrigo até o console: da parede do abrigo,
+        /// pelo campo, por baixo do corrimão (entre os postes x = 0 e 0,5) e pelo
+        /// deck até os fundos do console. A vegetação não nasce em cima dele.
+        /// </summary>
+        static readonly Vector3[] CaboRadar1994 =
+        {
+            new Vector3(4.45f, 0f, 10.3f), new Vector3(3.9f, 0f, 9.4f), new Vector3(3.4f, 0f, 7.6f),
+            new Vector3(2.6f, 0f, 5.4f), new Vector3(1.2f, 0f, 3.6f), new Vector3(0.25f, 0f, 2.75f),
+            new Vector3(0.25f, 0f, 2.3f)
+        };
+
+        /// <summary>Retângulo (x, z) do campo de antenas e do abrigo, livre de vegetação.</summary>
+        static readonly Rect CampoRadar1994 = new Rect(4f, 1f, 15.5f, 38.5f);
 
         static void Decorar1994(Transform q)
         {
@@ -763,10 +684,12 @@ namespace TrilhaDaInovacao.EditorTools
             // (centro, raio) que a vegetação não pode invadir.
             var reservados = new[]
             {
-                (new Vector3(6f, 0f, 9f), 2.3f), (new Vector3(-9f, 0f, 7f), 1.9f),
-                (PosicaoRadar1994, 1.2f), (new Vector3(4.4f, 0f, 2.2f), 0.7f)
-            };
-            bool Livre(Vector3 p, float folga) => reservados.All(r => (p - r.Item1).magnitude > r.Item2 + folga);
+                (new Vector3(-9f, 0f, 7f), 1.9f), (new Vector3(4.4f, 0f, 2.2f), 0.7f),
+                (new Vector3(-5f, 0f, 16f), 3f)   // rampa do Nike-Orion (Construir1994)
+            }.Concat(CaboRadar1994.Select(p => (p, 0.4f))).ToArray();
+            bool Livre(Vector3 p, float folga) => reservados.All(r => (p - r.Item1).magnitude > r.Item2 + folga) &&
+                !new Rect(CampoRadar1994.x - folga, CampoRadar1994.y - folga, CampoRadar1994.width + 2f * folga,
+                    CampoRadar1994.height + 2f * folga).Contains(new Vector2(p.x, p.z));
             for (var i = 0; i < 90; i++)
             {
                 var a = (float)rng.NextDouble() * Mathf.PI * 2f;
@@ -792,9 +715,6 @@ namespace TrilhaDaInovacao.EditorTools
             Modelo(n + "grass_large", q, new Vector3(2.4f, 0f, 1.2f), 0f, 0.45f);
             Modelo(n + "grass", q, new Vector3(-2.5f, 0f, 0.5f), 0f, 0.35f);
 
-            // Antenas extras do campo de lançamento, ao fundo.
-            Modelo("Kenney/space-kit/satelliteDish_detailed", q, new Vector3(6f, 0f, 9f), -140f, 3.2f);
-            Modelo("Kenney/space-kit/satelliteDish_detailed", q, new Vector3(-9f, 0f, 7f), 150f, 2.6f);
             Modelo("Kenney/space-kit/desk_chair", q, new Vector3(-1.7f, 0f, 1.45f), 180f, 0.95f);
         }
 
@@ -809,11 +729,13 @@ namespace TrilhaDaInovacao.EditorTools
             // Estações do NOC, viradas para o telão da parede esquerda.
             for (var i = 0; i < 2; i++)
             {
-                var z = 0.45f + i * 1.4f;
-                Modelo(f + "desk", q, new Vector3(-4.3f, 0f, z), -90f, 1.2f, Medida.Largura);
-                Modelo(f + "computerScreen", q, new Vector3(-4.4f, 0.75f, z), -90f, 0.45f, Medida.Largura);
-                Modelo(f + "computerKeyboard", q, new Vector3(-4.15f, 0.75f, z), -90f, 0.4f, Medida.Largura);
-                Modelo(f + "chairDesk", q, new Vector3(-3.7f, 0f, z), -90f, 0.95f);
+                // Giradas em -90°, a largura dos modelos fica no eixo z do quadro.
+                var z = 0.45f + i * 1.55f;
+                var mesa = Modelo(f + "desk", q, new Vector3(-4.3f, 0f, z), -90f, 0.75f);
+                var tampo = mesa != null ? BoundsNoPai(mesa, q).max.y : 0.75f;
+                Modelo(f + "computerScreen", q, new Vector3(-4.45f, tampo, z), -90f, 0.55f, Medida.Profundidade);
+                Modelo(f + "computerKeyboard", q, new Vector3(-4.1f, tampo, z), -90f, 0.4f, Medida.Profundidade);
+                Modelo(f + "chairDesk", q, new Vector3(-3.55f, 0f, z), -90f, 0.95f);
             }
 
             Modelo(f + "bookcaseClosedWide", q, new Vector3(4.65f, 0f, 0.6f), -90f, 1.9f);

@@ -1,21 +1,24 @@
-# Console do operador de radar para a Cena 2 · 1994 (Campanha Guará), low poly.
+# Console do operador do radar CUPRI para a Cena 2 · 1994 (Campanha Guará), low poly.
 #
 #   blender -b -P Ferramentas/blender/console_radar.py -- [saida.fbx] [previa.png]
 #
-# Como os consoles de radar da época (anos 1970 a 90): móvel de aço cinza com
-# mesa e painel inclinado. No painel, a tela PPI redonda de fósforo verde (o
-# radar visto de cima, com os círculos de distância e a varredura girando com a
-# antena), a tela A-scope retangular (o eco como um pulso ao longo da distância),
-# medidores analógicos de azimute, elevação e potência, a fileira de lâmpadas de
-# estado e os botões de ajuste. Na mesa, teclas, chaves de alavanca e a caixa de
-# comando com o botão grande de ligar o transmissor, de aro amarelo e preto de
-# segurança (o botão em si é criado no Unity, para brilhar e aceitar o toque). A
-# caixa deixa o botão a 0,9 m, na faixa confortável de toque em VR.
+# O CUPRI (radar_cupri.py) não gira: as antenas olham para o zênite. Por isso o
+# console não tem a tela PPI redonda dos radares de vigilância. O operador vê os
+# ecos num monitor de computador, como um mapa RTI (altura × hora, com a cor
+# dando a força do eco), onde aparecem a faixa do eletrojato e as plumas das
+# bolhas de plasma do spread F (Swartz e Woodman, GRL 1998). Móvel de aço cinza
+# com mesa e painel inclinado; no painel, o monitor RTI, o osciloscópio que
+# confere o pulso transmitido e o eco (A-scope), medidores de potência,
+# onda refletida e corrente do transmissor, a fileira de lâmpadas de estado e os
+# botões de ajuste. Na mesa, o teclado, chaves de alavanca e a caixa de comando
+# com o botão grande de ligar o transmissor, de aro amarelo e preto de segurança
+# (o botão em si é criado no Unity, para brilhar e aceitar o toque). A caixa
+# deixa o botão a 0,9 m, na faixa confortável de toque em VR.
 #
 # Medidas em metros, Z para cima, frente (o lado do operador) para -Y. Cotas que
 # o construtor de cenas usa (no Unity, com giro de 180°: x, z, y do Blender):
 #   painel inclinado: de (y 0,02; z 0,78) a (y 0,25; z 1,50)
-#   tela PPI: u = -0,27, s = 0,55, raio 0,17   (u ao longo de X, s de 0 a 1 subindo o painel)
+#   monitor RTI: u = -0,27, s = 0,55, tela de 0,40 × 0,30   (u ao longo de X, s de 0 a 1 subindo o painel)
 #   tela A-scope: u = 0,22, s = 0,62, 0,28 × 0,16
 #   botão de ligar: x 0,42, y -0,24, sobre a caixa de comando (z 0,9)
 import math
@@ -37,12 +40,12 @@ CINZA = material("Cinza", (0.6, 0.62, 0.58))
 CINZA_ESCURO = material("CinzaEscuro", (0.22, 0.23, 0.24))
 PRETO = material("Preto", (0.05, 0.05, 0.06))
 TELA = material("Tela", (0.02, 0.09, 0.05))
-VERDE = material("Verde", (0.12, 0.42, 0.2))
 BRANCO = material("Branco", (0.9, 0.9, 0.86))
 VERMELHO = material("Vermelho", (0.8, 0.12, 0.1))
 AMBAR = material("Ambar", (0.95, 0.6, 0.1))
 VERDE_LAMPADA = material("VerdeLampada", (0.2, 0.75, 0.3))
 AMARELO = material("Amarelo", (0.95, 0.8, 0.1))
+BEGE = material("Bege", (0.78, 0.74, 0.62))
 
 # Painel inclinado: base (y0, z0) até topo (y1, z1).
 Y0, Z0, Y1, Z1 = 0.02, 0.78, 0.25, 1.50
@@ -102,20 +105,14 @@ pecas.append(caixa("Tampa", -0.62, 0.62, 0.2, 0.37, Z1, Z1 + 0.04, CINZA_ESCURO)
 for x in (-0.62, 0.58):
     pecas.append(prisma(f"Lateral {x}", [(Y0 - 0.01, Z0), (0.36, Z0), (0.36, Z1 + 0.01), (Y1 - 0.01, Z1 + 0.01)], x, x + 0.04, CINZA_ESCURO))
 
-# Tela PPI: moldura preta, vidro verde-escuro e círculos de distância.
+# Monitor RTI: moldura bege do monitor, vidro escuro e os botões de ajuste abaixo.
 c = no_painel(-0.27, 0.55)
-pecas.append(no_plano("Moldura PPI", c, anel("Moldura PPI", 0.17, 0.205, 0.025, PRETO)))
-pecas.append(no_plano("Tela PPI", c, disco("Tela PPI", 0.172, 0.006, TELA, seg=28)))
-for k, r in enumerate((0.055, 0.11, 0.16)):
-    pecas.append(no_plano(f"Anel PPI {k}", c, anel(f"Anel PPI {k}", r - 0.003, r, 0.008, VERDE, seg=28)))
-for k in range(4):
-    cruz = loft(f"Cruz {k}", [anel_retangular(0.004, 0.32, 0, 0.0, 0, 1), anel_retangular(0.004, 0.32, 0, 0.008, 0, 1)], VERDE)
-    cruz.rotation_euler = (0, 0, k * math.pi / 4)
-    fixar([cruz])
-    pecas.append(no_plano(f"Cruz {k}", c, cruz))
-# Botões da PPI (alcance, brilho, foco) abaixo da tela.
+moldura = loft("Moldura RTI", [anel_retangular(0.46, 0.36, 0.02, 0.0, 0, 2), anel_retangular(0.46, 0.36, 0.02, 0.022, 0, 2)], BEGE)
+pecas.append(no_plano("Moldura RTI", c, moldura))
+tela_rti = loft("Tela RTI", [anel_retangular(0.4, 0.3, 0.012, 0.0, 0, 2), anel_retangular(0.4, 0.3, 0.012, 0.026, 0, 2)], TELA)
+pecas.append(no_plano("Tela RTI", c, tela_rti))
 for k, u in enumerate((-0.38, -0.27, -0.16)):
-    pecas.append(no_plano(f"Botao PPI {k}", no_painel(u, 0.15), disco(f"Botao PPI {k}", 0.022, 0.025, PRETO, seg=10)))
+    pecas.append(no_plano(f"Botao RTI {k}", no_painel(u, 0.15), disco(f"Botao RTI {k}", 0.022, 0.025, PRETO, seg=10)))
 
 # A-scope: moldura retangular e tela.
 c = no_painel(0.22, 0.62)
@@ -124,7 +121,7 @@ pecas.append(no_plano("Moldura A", c, moldura))
 tela_a = loft("Tela A", [anel_retangular(0.28, 0.16, 0.01, 0.0, 0, 1), anel_retangular(0.28, 0.16, 0.01, 0.024, 0, 1)], TELA)
 pecas.append(no_plano("Tela A", c, tela_a))
 
-# Medidores analógicos (azimute, elevação, potência) e as lâmpadas de estado.
+# Medidores analógicos (potência, onda refletida, corrente do transmissor) e as lâmpadas de estado.
 for k, u in enumerate((0.1, 0.22, 0.34)):
     p = no_painel(u, 0.27)
     pecas.append(no_plano(f"Aro medidor {k}", p, anel(f"Aro medidor {k}", 0.04, 0.05, 0.02, PRETO, seg=16)))
@@ -138,11 +135,12 @@ cores = [VERDE_LAMPADA, VERDE_LAMPADA, AMBAR, VERDE_LAMPADA, VERMELHO, AMBAR, VE
 for k, mat in enumerate(cores):
     pecas.append(no_plano(f"Lampada {k}", no_painel(-0.5 + k * 0.11, 0.9), disco(f"Lampada {k}", 0.017, 0.02, mat, seg=10)))
 
-# Mesa: teclas quadradas, chaves de alavanca e o aro do botão de ligar.
-for k in range(8):
-    x = -0.52 + (k % 4) * 0.075
-    y = -0.27 + (k // 4) * 0.075
-    pecas.append(caixa(f"Tecla {k}", x - 0.028, x + 0.028, y - 0.028, y + 0.028, 0.78, 0.8, BRANCO if k % 3 else AMBAR))
+# Mesa: teclado, chaves de alavanca e o aro do botão de ligar.
+pecas.append(caixa("Teclado", -0.56, -0.16, -0.32, -0.16, 0.78, 0.8, BEGE))
+for k in range(30):
+    x = -0.54 + (k % 10) * 0.037
+    y = -0.3 + (k // 10) * 0.045
+    pecas.append(caixa(f"Tecla {k}", x, x + 0.03, y, y + 0.036, 0.8, 0.812, BRANCO if k % 10 else AMBAR))
 for k in range(4):
     x = -0.1 + k * 0.08
     pecas.append(caixa(f"Base chave {k}", x - 0.02, x + 0.02, -0.24, -0.2, 0.78, 0.79, PRETO))

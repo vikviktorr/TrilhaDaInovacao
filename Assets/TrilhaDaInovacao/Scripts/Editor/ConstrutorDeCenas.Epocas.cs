@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using TMPro;
 using UnityEditor;
@@ -192,7 +193,8 @@ namespace TrilhaDaInovacao.EditorTools
                 for (var r = 0; r < 4; r++)
                     Bloco("Descida de fibra", q, new Vector3(-2.7f + r * 1.8f, 2.33f, z), new Vector3(0.12f, 0.35f, 0.12f), fibra);
             }
-            Bloco("Calha de fibra (tronco)", q, new Vector3(0f, 2.55f, 4.4f), new Vector3(0.22f, 0.1f, 2f), fibra);
+            // O tronco termina na face das calhas, sem atravessá-las.
+            Bloco("Calha de fibra (tronco)", q, new Vector3(0f, 2.55f, 4.4f), new Vector3(0.22f, 0.1f, 1.78f), fibra);
 
             // NOC: telão e duas estações de monitoramento junto à parede esquerda.
             var telao = Opaco("2009Telao", new Color(0.02f, 0.05f, 0.12f), new Color(0.05f, 0.18f, 0.4f));
@@ -320,12 +322,150 @@ namespace TrilhaDaInovacao.EditorTools
         // Cena 2 — 1994, Campanha Guará em Alcântara
         // ==================================================================
         /// <summary>
-        /// Console de radar dos anos 1970–90: tela PPI redonda (o radar visto de cima,
-        /// com a varredura girando junto da antena), A-scope, medidores e lâmpadas. O
-        /// botão de ligar, a tela acesa e a varredura são peças do Unity sobre o modelo.
+        /// Cabos do abrigo do radar CUPRI ao console: saem da caixa de entrada de
+        /// cabos na parede do abrigo voltada ao deck, correm pelo chão e entram no
+        /// painel de conectores dos fundos do console. Dois cabos: o de sinal
+        /// (coaxial, do receptor) e o multivias de controle do transmissor.
+        /// </summary>
+        static void CabeamentoRadar1994(Transform q)
+        {
+            var raiz = new GameObject("Cabeamento").transform;
+            raiz.SetParent(q, false);
+            var borracha = Opaco("1994Cabo", new Color(0.05f, 0.05f, 0.06f), smooth: 0.35f);
+            var controle = Opaco("1994CaboControle", new Color(0.2f, 0.22f, 0.15f), smooth: 0.3f);
+            var caixaCinza = Opaco("1994Conector", new Color(0.45f, 0.47f, 0.45f), smooth: 0.4f, metal: 0.3f);
+            const float raio = 0.014f;
+
+            var console = q.Find("Console do radar");
+            var fundos = console != null ? BoundsNoPai(console.gameObject, q) : new Bounds(new Vector3(0.05f, 0.75f, 0.8f), new Vector3(1.24f, 1.5f, 0.7f));
+            var chegada = new Vector3(0.25f, 0f, fundos.max.z);
+
+            // Painel de conectores nos fundos do console.
+            var painel = Bloco("Painel de conectores", raiz, Vector3.zero, new Vector3(0.26f, 0.14f, 0.04f), caixaCinza);
+            painel.transform.SetPositionAndRotation(q.TransformPoint(chegada + new Vector3(0f, 0.25f, 0.02f)), q.rotation);
+
+            for (var c = 0; c < 2; c++)
+            {
+                var lado = c == 0 ? -0.035f : 0.035f;
+                var pontos = new List<Vector3>();
+                // Da caixa de entrada (parede -x do abrigo) desce até o chão; percorre o campo; sobe para o painel.
+                pontos.Add(EntradaCabos1994 + new Vector3(-0.08f, -0.08f, lado));
+                pontos.Add(EntradaCabos1994 + new Vector3(-0.2f, -0.35f, lado));
+                for (var i = 0; i < CaboRadar1994.Length; i++)
+                {
+                    var antes = CaboRadar1994[Mathf.Max(0, i - 1)];
+                    var depois = CaboRadar1994[Mathf.Min(CaboRadar1994.Length - 1, i + 1)];
+                    var tangente = depois - antes;
+                    var normal = new Vector3(-tangente.z, 0f, tangente.x).normalized;
+                    pontos.Add(CaboRadar1994[i] + normal * lado + Vector3.up * raio);
+                }
+
+                pontos.Add(chegada + new Vector3(lado, raio, 0.3f));
+                pontos.Add(chegada + new Vector3(lado, 0.12f, 0.12f));
+                pontos.Add(chegada + new Vector3(lado, 0.25f, 0.04f));
+
+                var mat = c == 0 ? borracha : controle;
+                for (var i = 0; i + 1 < pontos.Count; i++)
+                {
+                    var a = q.TransformPoint(pontos[i]);
+                    var b = q.TransformPoint(pontos[i + 1]);
+                    var trecho = Bloco("Cabo", raiz, Vector3.zero, new Vector3(raio * 2f, (b - a).magnitude * 0.5f, raio * 2f), mat,
+                        PrimitiveType.Cylinder);
+                    trecho.transform.SetPositionAndRotation((a + b) * 0.5f, Quaternion.FromToRotation(Vector3.up, b - a));
+                    if (i > 0)
+                    {
+                        var junta = Bloco("Curva do cabo", raiz, Vector3.zero, Vector3.one * raio * 2f, mat, PrimitiveType.Sphere);
+                        junta.transform.position = a;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Mapa RTI de uma noite de spread F, como os do CUPRI em Alcântara (Swartz e
+        /// Woodman, GRL 1998): x = hora local (19 h às 23 h), y = altura (200 a 1000 km),
+        /// cor = força do eco. Depois do pôr do sol aparece a camada fina perto de
+        /// 300 km, que sobe; dela sobem as plumas das bolhas de plasma, inclinadas,
+        /// até passar de 1000 km. Textura gerada uma vez em Gerado/.
+        /// </summary>
+        static Texture2D TexturaRTI1994()
+        {
+            var caminho = $"{PastaGerado}/1994RTI.png";
+            if (!File.Exists(caminho))
+            {
+                const int largura = 256, altura = 128;
+                var tex = new Texture2D(largura, altura, TextureFormat.RGB24, false);
+                var rng = new System.Random(1017);   // 17 out. 1994, a noite do artigo
+                // Paleta de SNR dos RTIs: azul-escuro, azul, ciano, verde, amarelo, vermelho.
+                var paleta = new[]
+                {
+                    new Color(0.02f, 0.03f, 0.12f), new Color(0.05f, 0.15f, 0.55f), new Color(0.1f, 0.65f, 0.85f),
+                    new Color(0.25f, 0.85f, 0.3f), new Color(1f, 0.9f, 0.15f), new Color(0.95f, 0.2f, 0.1f)
+                };
+                Color Cor(float v)
+                {
+                    v = Mathf.Clamp01(v) * (paleta.Length - 1);
+                    var i = Mathf.Min(paleta.Length - 2, Mathf.FloorToInt(v));
+                    return Color.Lerp(paleta[i], paleta[i + 1], v - i);
+                }
+
+                // Plumas: (início, velocidade de subida, inclinação, largura).
+                var plumas = new[] { (0.27f, 2.6f, 0.05f, 0.022f), (0.43f, 3.4f, 0.07f, 0.03f), (0.6f, 2.2f, 0.04f, 0.02f), (0.78f, 1.8f, 0.06f, 0.026f) };
+                for (var x = 0; x < largura; x++)
+                for (var y = 0; y < altura; y++)
+                {
+                    float t = x / (largura - 1f), h = y / (altura - 1f);
+                    var ruido = (float)rng.NextDouble();
+                    var v = 0.08f * ruido;
+
+                    // Camada do fundo da região F: nasce no pôr do sol, sobe e depois desce.
+                    var base_ = 0.13f + 0.1f * Mathf.Exp(-Mathf.Pow((t - 0.3f) / 0.15f, 2f)) - 0.04f * Mathf.Max(0f, t - 0.5f);
+                    if (t > 0.1f)
+                    {
+                        var camada = Mathf.Exp(-Mathf.Pow((h - base_) / 0.025f, 2f));
+                        v = Mathf.Max(v, camada * (0.45f + 0.25f * ruido) * Mathf.Clamp01((t - 0.1f) / 0.06f));
+                    }
+
+                    foreach (var (inicio, subida, inclinacao, meia) in plumas)
+                    {
+                        if (t < inicio) continue;
+                        var topo = base_ + (t - inicio) * subida;
+                        if (h < base_ - 0.02f || h > topo) continue;
+                        var centro = inicio + 0.02f + inclinacao * (h - base_);
+                        var d = Mathf.Abs(t - centro) / meia;
+                        if (d > 1f) continue;
+                        // Mais forte no meio e perto da base; manchas no corpo da pluma.
+                        var forca = (1f - d * d) * (0.65f + 0.35f * (1f - (h - base_))) * (0.7f + 0.3f * ruido);
+                        v = Mathf.Max(v, 0.35f + 0.65f * forca);
+                    }
+
+                    var cor = Cor(v);
+                    // Grade: 400, 600 e 800 km; 20 h, 21 h e 22 h.
+                    if (y == 32 || y == 64 || y == 96 || x == 64 || x == 128 || x == 192)
+                        cor = Color.Lerp(cor, new Color(0.5f, 0.55f, 0.6f), 0.35f);
+                    tex.SetPixel(x, y, cor);
+                }
+
+                File.WriteAllBytes(caminho, tex.EncodeToPNG());
+                Object.DestroyImmediate(tex);
+                AssetDatabase.ImportAsset(caminho, ImportAssetOptions.ForceSynchronousImport);
+                var importador = (TextureImporter)AssetImporter.GetAtPath(caminho);
+                importador.mipmapEnabled = false;
+                importador.wrapMode = TextureWrapMode.Clamp;
+                importador.textureCompression = TextureImporterCompression.Uncompressed;
+                importador.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(caminho);
+        }
+
+        /// <summary>
+        /// Console do operador do radar CUPRI: monitor do mapa RTI (o radar não gira,
+        /// então não há tela PPI), A-scope, medidores e lâmpadas. O botão de ligar, a
+        /// tela acesa e o mapa que se desenha são peças do Unity sobre o modelo.
         /// Cotas do modelo no Blender (x, y, z) viram (x, z, y) aqui, com o giro de 180°.
         /// </summary>
-        static (PokeTrigger botao, Pulsar brilho, GameObject tela, Girar varredura) ConsoleRadar1994(Transform q, Vector3 posicao)
+        static (PokeTrigger botao, Pulsar brilho, GameObject tela, RevelarRTI rti) ConsoleRadar1994(Transform q, Vector3 posicao)
         {
             var raiz = new GameObject("Console do radar").transform;
             raiz.SetParent(q, false);
@@ -343,7 +483,10 @@ namespace TrilhaDaInovacao.EditorTools
             // Painel inclinado: de (z 0,02; y 0,78) a (z 0,25; y 1,50), normal para o visitante.
             Vector3 NoPainel(float u, float s) => origem + new Vector3(u, 0.78f + 0.72f * s, 0.02f + 0.23f * s);
             var normal = new Vector3(0f, 0.23f, -0.72f).normalized;
+            var subida = new Vector3(0f, 0.72f, 0.23f).normalized;
             var deitado = Quaternion.FromToRotation(Vector3.up, normal);
+            // Quad e texto mostram a face -z: ela fica virada para o visitante.
+            var deFrente = Quaternion.LookRotation(-normal, subida);
 
             // Botão de ligar o transmissor, no aro amarelo e preto da caixa de comando.
             var alvo = new GameObject("Botão ligar").transform;
@@ -360,24 +503,50 @@ namespace TrilhaDaInovacao.EditorTools
             var rotulo = Texto("Rótulo ligar", raiz, origem + new Vector3(0.42f, 1.07f, -0.26f), "LIGAR RADAR", 0.045f, 0.4f, Color.white);
             rotulo.fontStyle = FontStyles.Bold;
             rotulo.gameObject.AddComponent<EncararUsuario>();
+            var titulo = Texto("Título do monitor", raiz, NoPainel(-0.27f, 0.83f) + normal * 0.004f, "CUPRI · 50 MHz", 0.022f, 0.42f,
+                new Color(0.15f, 0.16f, 0.18f));
+            titulo.transform.localRotation = deFrente;
+            titulo.fontStyle = FontStyles.Bold;
 
-            // Tela acesa: o fósforo da PPI, a varredura e um eco; o traço da A-scope.
+            // Tela acesa: o mapa RTI que se desenha e o traço da A-scope.
             var tela = new GameObject("Tela ligada").transform;
             tela.SetParent(raiz, false);
-            var fosforo = Opaco("1994Fosforo", new Color(0.05f, 0.25f, 0.1f), new Color(0.05f, 0.35f, 0.12f));
             var verde = Opaco("1994Varredura", new Color(0.4f, 1f, 0.5f), new Color(0.35f, 1f, 0.45f));
-            var ppi = NoPainel(-0.27f, 0.55f);
-            Bloco("Fósforo PPI", tela, ppi + normal * 0.007f, new Vector3(0.33f, 0.0005f, 0.33f), fosforo,
-                PrimitiveType.Cylinder, deitado.eulerAngles);
-            var pivo = new GameObject("Varredura").transform;
-            pivo.SetParent(tela, false);
-            pivo.SetLocalPositionAndRotation(ppi + normal * 0.012f, deitado);
-            Bloco("Raio", pivo, new Vector3(0f, 0f, 0.08f), new Vector3(0.008f, 0.002f, 0.16f), verde);
-            var varredura = pivo.gameObject.AddComponent<Girar>();
-            varredura.grausPorSegundo = 60f;   // junto com a antena (10 rpm)
-            varredura.ativo = false;
-            Bloco("Eco", tela, ppi + normal * 0.012f + deitado * new Vector3(0.07f, 0f, 0.05f), Vector3.one * 0.014f,
-                verde, PrimitiveType.Sphere);
+            var centroTela = NoPainel(-0.27f, 0.55f) + normal * 0.03f;
+            var mapaRaiz = new GameObject("Mapa RTI").transform;
+            mapaRaiz.SetParent(tela, false);
+            mapaRaiz.SetLocalPositionAndRotation(centroTela, deFrente);
+            mapaRaiz.localScale = new Vector3(0.38f, 0.28f, 1f);
+            var pivo = new GameObject("Pivô").transform;
+            pivo.SetParent(mapaRaiz, false);
+            pivo.localPosition = new Vector3(-0.5f, 0f, 0f);
+            var materialRti = ObterMaterial("1994RTI", "Universal Render Pipeline/Unlit");
+            materialRti.SetTexture("_BaseMap", TexturaRTI1994());
+            materialRti.SetColor("_BaseColor", Color.white);
+            EditorUtility.SetDirty(materialRti);
+            var mapa = Bloco("Mapa", pivo, new Vector3(0.5f, 0f, 0f), Vector3.one, materialRti, PrimitiveType.Quad);
+            var cursor = Bloco("Cursor", mapaRaiz, new Vector3(0f, 0f, -0.001f), new Vector3(0.012f, 1f, 1f), verde, PrimitiveType.Quad);
+            var rti = mapaRaiz.gameObject.AddComponent<RevelarRTI>();
+            rti.pivo = pivo;
+            rti.mapa = mapa.GetComponent<Renderer>();
+            rti.cursor = cursor.transform;
+            rti.duracao = 22f;
+
+            // Escalas do mapa, na borda da tela: altura à esquerda e hora embaixo.
+            var direita = deFrente * Vector3.right;
+            var cimaTela = deFrente * Vector3.up;
+            var rotulos = new[]
+            {
+                ("1000 km", -0.15f, 0.125f), ("200 km", -0.155f, -0.125f), ("19 h", -0.17f, -0.155f), ("23 h", 0.17f, -0.155f),
+                ("ALTURA × HORA LOCAL", 0.03f, -0.155f)
+            };
+            foreach (var (texto, dx, dy) in rotulos)
+            {
+                // Dentro da tela, verde-claro; na moldura bege, escuro.
+                var t = Texto($"Escala {texto}", tela, centroTela + normal * 0.002f + direita * dx + cimaTela * dy, texto, 0.014f, 0.2f,
+                    dy < -0.14f ? new Color(0.15f, 0.16f, 0.18f) : new Color(0.75f, 1f, 0.8f));
+                t.transform.localRotation = deFrente;
+            }
 
             var traco = new GameObject("Traço A-scope").transform;
             traco.SetParent(tela, false);
@@ -392,7 +561,7 @@ namespace TrilhaDaInovacao.EditorTools
             Linha("Traço", traco, pontos, 0.004f, new Color(0.4f, 1f, 0.5f), true);
             tela.gameObject.SetActive(false);
 
-            return (botao, brilho, tela.gameObject, varredura);
+            return (botao, brilho, tela.gameObject, rti);
         }
 
         static string Construir1994()
@@ -414,35 +583,49 @@ namespace TrilhaDaInovacao.EditorTools
             // Restinga, palmeiras e antenas (modelos Kenney).
             Decorar1994(q);
 
-            // Console do operador de radar (Ferramentas/blender/console_radar.py): o
-            // visitante liga o radar no botão da mesa e a tela PPI mostra a varredura.
+            // Console do operador do radar (Ferramentas/blender/console_radar.py): o
+            // visitante liga o radar no botão da mesa e o monitor desenha o mapa RTI.
             var console = ConsoleRadar1994(q, new Vector3(0.05f, 0f, 0.8f));
 
-            // Antena do radar com o feixe que varre o céu.
-            var antenaBase = new GameObject("Radar").transform;
-            antenaBase.SetParent(q, false);
-            antenaBase.localPosition = PosicaoRadar1994;
+            // Radar CUPRI da Universidade Cornell (Ferramentas/blender/radar_cupri.py):
+            // abrigo do transmissor e campo de antenas Yagi fixas, apontadas para o
+            // zênite, à direita do deck. A origem do modelo é o centro do piso do abrigo.
             var metal = Opaco("1994Metal", new Color(0.75f, 0.76f, 0.78f), smooth: 0.6f, metal: 0.4f);
-            // Como num radar de verdade, o pedestal fica fixo no chão e só a cabeça
-            // (garfo + refletor parabólico) gira em azimute sobre o rolamento do
-            // topo do pedestal. 60°/s = 10 rpm, típico de radar de vigilância.
-            var radar = Modelo("Kenney/space-kit/satelliteDish_large", antenaBase, Vector3.zero, 180f, 1.9f, Medida.MaiorLado);
-            var giro = new GameObject("Giro").transform;
-            giro.SetParent(antenaBase, false);
-            var centroPrato = antenaBase.position + Vector3.up * 1.2f;
-            var eixoPrato = antenaBase.rotation * Quaternion.Euler(-45f, 180f, 0f) * Vector3.forward;
-            if (radar != null) SepararCabecaDoRadar(radar, giro, out centroPrato, out eixoPrato);
-            var girar = giro.gameObject.AddComponent<Girar>();
-            girar.grausPorSegundo = 60f;
-            girar.ativo = false;
-            // O feixe sai do centro do prato, para onde o refletor aponta.
-            var inclinacao = new GameObject("Inclinação").transform;
-            inclinacao.SetParent(giro, false);
-            inclinacao.SetPositionAndRotation(centroPrato, Quaternion.LookRotation(eixoPrato));
-            var feixe = Bloco("Feixe", inclinacao, new Vector3(0f, 0f, 12f), new Vector3(0.6f, 12f, 0.6f),
-                Transparente("1994Feixe", new Color(0.4f, 1f, 0.6f, 0.12f), true), PrimitiveType.Cylinder, new Vector3(90f, 0f, 0f));
-            var bipe = Fonte("Bipe do radar", q, antenaBase.position + Vector3.up * 2f, true);
+            var radar = Modelo("Guara/radar-cupri", q, PosicaoAbrigo1994, 180f, 6.4f);
+            if (radar != null)
+                radar.transform.localPosition = PosicaoAbrigo1994;
+            else
+                Bloco("Abrigo do radar", q, PosicaoAbrigo1994 + Vector3.up * 1.6f, new Vector3(2.4f, 2.5f, 4.6f), Opaco("1994Abrigo", new Color(0.86f, 0.87f, 0.84f)));
+            CabeamentoRadar1994(q);
+
+            // Feixe vertical sobre os dois arranjos 4 × 4, do topo das Yagis até a
+            // ionosfera, e os pulsos que sobem por ele quando o radar liga.
+            const float topoYagis = 6.4f, alturaIonosfera = 45f;
+            var centroArranjos = CentroArranjos1994 + Vector3.up * topoYagis;
+            var feixe = Bloco("Feixe", q, centroArranjos + Vector3.up * (alturaIonosfera - topoYagis) * 0.5f,
+                new Vector3(11f, (alturaIonosfera - topoYagis) * 0.5f, 24f),
+                Transparente("1994Feixe", new Color(0.4f, 1f, 0.6f, 0.07f), true), PrimitiveType.Cylinder);
             feixe.SetActive(false);
+            var pulsosGo = new GameObject("Pulsos do radar");
+            pulsosGo.transform.SetParent(q, false);
+            pulsosGo.transform.localPosition = centroArranjos;
+            var materialPulso = Transparente("1994Pulso", new Color(0.55f, 1f, 0.7f, 0.16f), true);
+            var discos = new Transform[4];
+            for (var i = 0; i < discos.Length; i++)
+                discos[i] = Bloco($"Pulso {i}", pulsosGo.transform, Vector3.zero, new Vector3(1f, 0.15f, 2.2f), materialPulso,
+                    PrimitiveType.Cylinder).transform;
+            var pulsos = pulsosGo.AddComponent<PulsosRadar>();
+            pulsos.pulsos = discos;
+            pulsos.altura = alturaIonosfera - topoYagis;
+            pulsos.raioBase = 9f;
+            pulsos.raioTopo = 11f;
+            pulsos.periodo = 3.2f;
+            // O bipe sai do console, perto do visitante.
+            pulsos.bipe = Fonte("Bipe do radar", q, q.TransformPoint(new Vector3(0.05f, 1.2f, 0.9f)), true);
+
+            // Antena de rastreio AN/GMD-1A (Ferramentas/blender/antena_gmd1.py), parada,
+            // no fundo, ao lado da rampa: rastreava as sondas dos foguetes meteorológicos.
+            Modelo("Guara/antena-gmd1", q, new Vector3(-9f, 0f, 7f), 24f, 3.5f);
 
             // Ionosfera: faixa translúcida alta no céu.
             var ionosfera = Bloco("Ionosfera", q, new Vector3(0f, 45f, 40f), new Vector3(320f, 320f, 1f),
@@ -493,9 +676,9 @@ namespace TrilhaDaInovacao.EditorTools
             Bandeira(q, new Vector3(-2.25f, 0f, 2.35f), true);
             Bandeira(q, new Vector3(-1.45f, 0f, 2.35f), false);
             FichaReal(q, new Vector3(-0.55f, 0f, -0.85f), "Campanha Guará · ago.–out. 1994",
-                "A NASA e o INPE lançaram de Alcântara foguetes Nike-Orion, Nike-Tomahawk e Black Brant; " +
-                "um Black Brant chegou a 956 km de altitude. Radares e ionossondas em terra, perto de São Luís, " +
-                "acompanharam a ionosfera sobre o equador magnético.");
+                "NASA e INPE lançaram de Alcântara 13 foguetes de sondagem (Nike-Orion, Nike-Tomahawk e Black Brant) " +
+                "e 20 meteorológicos; um Black Brant chegou a 956 km. O radar CUPRI, da Universidade Cornell, com antenas " +
+                "apontadas para o céu, viu bolhas de plasma subirem a mais de 1000 km.");
 
             var ambiente = Fonte("Vento e mar", q, q.TransformPoint(new Vector3(0f, 2f, 3f)), false);
 
@@ -503,15 +686,14 @@ namespace TrilhaDaInovacao.EditorTools
             seq.botaoRadar = console.botao;
             seq.brilhoBotao = console.brilho;
             seq.telaLigada = console.tela;
-            seq.varredura = console.varredura;
-            seq.antena = girar;
+            seq.rti = console.rti;
+            seq.pulsos = pulsos;
             seq.feixe = feixe;
             seq.ionosfera = ionosfera.transform;
             seq.rotuloIonosfera = rotuloIonosfera;
             seq.trajetoria = trajetoria;
             seq.pontoNoCeu = pontoNoCeu;
             seq.ambiente = ambiente;
-            seq.bipe = bipe;
 
             LugarDoProximo(q, new Vector3(0.45f, 0f, -0.85f), false);   // atrás do visitante, ao lado da ficha
             return Salvar(cena, LayoutTrilha.Cenas[2]);

@@ -261,18 +261,30 @@ namespace TrilhaDaInovacao.EditorTools
             return componente;
         }
 
+        /// <summary>
+        /// As 7 marcas da trilha e, por último, a da saída. Só a próxima parada
+        /// aparece (ver FloorMarker), com o nome dentro do círculo.
+        /// </summary>
         static FloorMarker[] MontarMarcas()
         {
             var raiz = new GameObject("Marcas no piso").transform;
-            var marcas = new FloorMarker[LayoutTrilha.Marcas.Length];
+            var total = LayoutTrilha.Marcas.Length;
+            var marcas = new FloorMarker[total + 1];
             var linhaMat = LinhaSolida("Linha");
             var disco = Transparente("MarcaDisco", new Color(0.35f, 0.85f, 1f, 0.2f), true);
 
-            for (var i = 0; i < marcas.Length; i++)
+            for (var i = 0; i <= total; i++)
             {
-                var go = new GameObject($"Marca {i} · {(i == 0 ? "Início" : LayoutTrilha.Anos[i])}");
+                var saida = i == total;
+                var posicao = saida ? LayoutTrilha.Saida : LayoutTrilha.Marcas[i];
+                // Legível para quem está na marca anterior, olhando para o foco dela
+                // (a próxima marca fica à direita).
+                var leitura = LayoutTrilha.Foco(saida ? total - 1 : Mathf.Max(0, i - 1));
+                var nome = saida ? "SAÍDA" : i == 0 ? "INÍCIO" : LayoutTrilha.Anos[i] == "2023" ? "2023–2025" : LayoutTrilha.Anos[i];
+
+                var go = new GameObject(saida ? "Saída (monitor da equipe)" : $"Marca {i} · {(i == 0 ? "Início" : LayoutTrilha.Anos[i])}");
                 go.transform.SetParent(raiz, false);
-                go.transform.SetPositionAndRotation(LayoutTrilha.Marcas[i], LayoutTrilha.Orientacao(i));
+                go.transform.SetPositionAndRotation(posicao, Quaternion.LookRotation(leitura, Vector3.up));
 
                 var anel = Linha("Anel", go.transform, Circulo(LayoutTrilha.RaioMarca, 64, 0.008f), 0.04f, Color.white, true, linhaMat);
                 anel.loop = true;
@@ -280,9 +292,8 @@ namespace TrilhaDaInovacao.EditorTools
                 var fundo = Bloco("Disco", go.transform, new Vector3(0f, 0.004f, 0f),
                     new Vector3(LayoutTrilha.RaioMarca * 2f, 0.002f, LayoutTrilha.RaioMarca * 2f), disco, PrimitiveType.Cylinder);
 
-                var rotulo = Texto("Rótulo", go.transform, new Vector3(0f, 0.01f, LayoutTrilha.RaioMarca + 0.14f),
-                    i == 0 ? "INÍCIO" : LayoutTrilha.Anos[i] == "2023" ? "2023–2025" : LayoutTrilha.Anos[i],
-                    0.13f, 1.2f, Color.white);
+                // Deitado no centro do disco.
+                var rotulo = Texto("Rótulo", go.transform, new Vector3(0f, 0.012f, 0f), nome, 0.16f, 1f, Color.white);
                 rotulo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 rotulo.fontStyle = FontStyles.Bold;
 
@@ -290,17 +301,6 @@ namespace TrilhaDaInovacao.EditorTools
                 marca.ConfigurarNoEditor(i, anel, fundo.GetComponent<Renderer>(), rotulo);
                 marcas[i] = marca;
             }
-
-            // Saída: onde o monitor recebe o visitante (só sinalização).
-            var saida = new GameObject("Saída (monitor da equipe)");
-            saida.transform.SetParent(raiz, false);
-            saida.transform.position = LayoutTrilha.Saida;
-            var anelSaida = Linha("Anel", saida.transform, Circulo(0.45f, 48, 0.008f), 0.025f,
-                new Color(0.6f, 0.65f, 0.7f), true, linhaMat);
-            anelSaida.loop = true;
-            var textoSaida = Texto("Rótulo", saida.transform, new Vector3(0f, 0.01f, 0f), "SAÍDA", 0.1f, 1f,
-                new Color(0.7f, 0.75f, 0.8f));
-            textoSaida.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
 
             return marcas;
         }
@@ -772,7 +772,6 @@ namespace TrilhaDaInovacao.EditorTools
             m.SetTexture("_BaseMap", aditivo ? texturaBrilho : texturaFumaca);
             m.SetColor("_BaseColor", cor ?? Color.white);
             ConfigurarTransparencia(m, aditivo);
-            m.SetFloat("_Blend", aditivo ? 2f : 0f);
             EditorUtility.SetDirty(m);
             return m;
         }
@@ -785,7 +784,6 @@ namespace TrilhaDaInovacao.EditorTools
             m.SetTexture("_BaseMap", null);
             m.SetColor("_BaseColor", Color.white);
             ConfigurarTransparencia(m, true);
-            m.SetFloat("_Blend", 2f);
             EditorUtility.SetDirty(m);
             return m;
         }
@@ -793,14 +791,11 @@ namespace TrilhaDaInovacao.EditorTools
         static void ConfigurarTransparencia(Material m, bool aditivo)
         {
             m.SetFloat("_Surface", 1f);
+            m.SetFloat("_Blend", aditivo ? 2f : 0f);
+            // Os fatores de blend e as keywords vêm do próprio URP. Valores escritos à mão divergem
+            // do que o editor grava ao validar o material (e o build ficava diferente do editor).
+            BaseShaderGUI.SetupMaterialBlendMode(m);
             m.SetFloat("_ZWrite", 0f);
-            m.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-            m.SetFloat("_DstBlend", (float)(aditivo ? BlendMode.One : BlendMode.OneMinusSrcAlpha));
-            m.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
-            m.SetFloat("_DstBlendAlpha", (float)BlendMode.OneMinusSrcAlpha);
-            m.SetOverrideTag("RenderType", "Transparent");
-            m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            m.renderQueue = (int)RenderQueue.Transparent;
             m.SetShaderPassEnabled("ShadowCaster", false);
             m.SetShaderPassEnabled("DepthOnly", false);
         }

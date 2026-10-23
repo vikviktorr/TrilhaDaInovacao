@@ -16,6 +16,7 @@ namespace TrilhaDaInovacao
     public class VisitDirector : MonoBehaviour
     {
         [Header("Referências do Bootstrap")]
+        [Tooltip("Marcas 0 a 6 da trilha e, por último, a da saída.")]
         [SerializeField] FloorMarker[] marcas;
         [SerializeField] LineRenderer trilhaDeLuz;
         [SerializeField] ScreenFader fader;
@@ -226,7 +227,10 @@ namespace TrilhaDaInovacao
             // Encerramento: o último portal leva de volta ao hub, junto da saída.
             portal.Posicionar(LayoutTrilha.Marcas[LayoutTrilha.TotalEpocas], LayoutTrilha.Saida,
                 LayoutTrilha.Foco(LayoutTrilha.TotalEpocas), "", "De volta ao Sebraelab", LugarDoBotao());
+            var saida = marcas.Length > LayoutTrilha.TotalEpocas + 1 ? marcas[LayoutTrilha.TotalEpocas + 1] : null;
+            if (saida != null) saida.Definir(EstadoMarca.Proxima);
             yield return Passagem(LayoutTrilha.TotalEpocas, LayoutTrilha.Saida, true);
+            if (saida != null) saida.Definir(EstadoMarca.Visitada);
             yield return TrocarCena(LayoutTrilha.Inicio, null);
             portal.Esconder();
             yield return fader.Abrir();

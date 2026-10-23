@@ -44,7 +44,9 @@ namespace TrilhaDaInovacao
         public void Definir(EstadoMarca novo)
         {
             estado = novo;
-            var visivel = novo != EstadoMarca.Apagada;
+            // Só a próxima parada aparece: marcas visitadas e futuras somem, para não
+            // poluir o chão dos cenários nem se sobrepor umas às outras.
+            var visivel = novo == EstadoMarca.Proxima;
             if (anel != null) anel.enabled = visivel;
             if (disco != null) disco.enabled = novo == EstadoMarca.Proxima;
             if (rotulo != null) rotulo.gameObject.SetActive(visivel);
