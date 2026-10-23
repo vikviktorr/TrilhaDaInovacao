@@ -121,6 +121,9 @@ Ferramentas/instalar-quest.sh        # adb install do APK no Quest 2 (Modo Desen
 
 No editor: menu **Trilha da Inovação → 0 · Configurar tudo** e depois os itens **3 · Build**.
 
+Se o editor aparecer com chiado na Scene view, cena vazia ou materiais rosa, veja **Problemas comuns no editor** em [`AGENTS.md`](AGENTS.md#problemas-comuns-no-editor).
+No Linux com placa Intel, abra o editor com `-force-vulkan` (Unity Hub → **⋮ → Add command line arguments**).
+
 ## Controles
 
 | Quem | Ação | Comando |

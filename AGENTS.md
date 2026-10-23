@@ -64,6 +64,19 @@ Para instalar no óculos (Modo Desenvolvedor e cabo USB), use `Ferramentas/insta
 Pela linha de comando, com o editor fechado, o equivalente é `Ferramentas/build.sh [linux|windows|quest]`.
 `SEM_SETUP=1` pula a regeneração das cenas.
 
+### Problemas comuns no editor
+
+| Sintoma | Causa | O que fazer |
+| --- | --- | --- |
+| Scene/Game view com chiado vermelho e azul no céu e no chão | Driver OpenGL do Mesa na Intel (a barra de título mostra `<OpenGL 4.5>`) desenha lixo de memória | Feche o Unity. No Unity Hub, em **Projects → ⋮ → Add command line arguments**, coloque `-force-vulkan` e reabra. A barra de título deve mostrar `<Vulkan>`. Se não resolver, teste `-force-glcore45` ou atualize o Mesa. |
+| Hierarchy só com `Untitled`, Main Camera e Directional Light | É a cena vazia padrão do Unity; o jogo não está aberto | Abra `Assets/Scenes/00_Bootstrap.unity` e aperte **Play**. |
+| Época ou hub sem luz, rig ou interface | As cenas são aditivas e foram abertas sozinhas | Rode sempre a partir de `00_Bootstrap.unity`. |
+| Materiais rosa, modelos faltando ou erros que somem depois | A primeira importação (`Library/` vazia) ainda está rodando | Espere a importação terminar (5 a 20 minutos) e rode **Trilha da Inovação → 0 · Configurar tudo (XR + cenas)**. |
+| Projeto "novo" e lento logo depois de um `git clone` | O clone foi feito dentro da pasta de outro clone e o Hub abriu o aninhado | Abra a pasta do repositório que já tem a `Library/` importada e apague o clone aninhado. |
+| Aviso `CS0618 ... k_SettingsKey is obsolete` em `ConfiguradorXR.cs` | API depreciada do XR Plug-in Management 4.7 | Só aviso; não atrapalha. |
+| Pasta vazia `Assets/XR 1` | Criada pelo editor durante a configuração do XR | Pode ignorar; pasta vazia não entra no git. |
+| `GLib-GIO-CRITICAL`, `libxml2.so.16` ou shaders `Terrain/Lit`/`SpeedTree7` "not found" no `Editor.log` | Mensagens normais do Unity com URP no Linux | Pode ignorar. |
+
 ## Rodar no Meta Quest 2
 
 O jogo roda direto no óculos (APK Android, standalone), sem PC.
