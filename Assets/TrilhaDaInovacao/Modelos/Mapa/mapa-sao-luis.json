@@ -1,0 +1,66 @@
+{
+ "proporcao": 0.9843,
+ "fonte": "IBGE, malha municipal (API v3)",
+ "pontos": [
+  {
+   "nome": "SÃO LUÍS",
+   "tipo": "municipio",
+   "u": 0.3362,
+   "v": 0.3736
+  },
+  {
+   "nome": "SÃO JOSÉ\nDE RIBAMAR",
+   "tipo": "municipio",
+   "u": 0.6936,
+   "v": 0.563
+  },
+  {
+   "nome": "PAÇO DO\nLUMIAR",
+   "tipo": "municipio",
+   "u": 0.7081,
+   "v": 0.7144
+  },
+  {
+   "nome": "RAPOSA",
+   "tipo": "municipio",
+   "u": 0.762,
+   "v": 0.8814
+  },
+  {
+   "nome": "Ponto 1",
+   "tipo": "rede",
+   "u": 0.2914,
+   "v": 0.5944
+  },
+  {
+   "nome": "Ponto 2",
+   "tipo": "rede",
+   "u": 0.3362,
+   "v": 0.6717
+  },
+  {
+   "nome": "Ponto 3",
+   "tipo": "rede",
+   "u": 0.4258,
+   "v": 0.7269
+  },
+  {
+   "nome": "Ponto 4",
+   "tipo": "rede",
+   "u": 0.5379,
+   "v": 0.6827
+  },
+  {
+   "nome": "Ponto 5",
+   "tipo": "rede",
+   "u": 0.4931,
+   "v": 0.5392
+  },
+  {
+   "nome": "Ponto 6",
+   "tipo": "rede",
+   "u": 0.3586,
+   "v": 0.495
+  }
+ ]
+}

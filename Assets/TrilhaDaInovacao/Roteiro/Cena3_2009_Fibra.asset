@@ -21,22 +21,22 @@ MonoBehaviour:
   falas:
   - id: intro
     texto: "S\xE3o Lu\xEDs, 2009. A RNP inaugura a Rede Metropolitana da cidade."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: b3bfccb180daa6802bdcf7e3707afe1a, type: 3}
     duracao: 0
   - id: numeros
     texto: "S\xE3o 43 quil\xF4metros de fibra \xF3ptica ligando seis institui\xE7\xF5es
       a 1 Gbps."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 225868dd77179d0838c29004a5c620c9, type: 3}
     duracao: 0
   - id: dica
     texto: Toque no ponto grande que pulsa no mapa.
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 81fbecd1411757060891f9fe308d8553, type: 3}
     duracao: 0
   - id: veja
     texto: "Veja os centros de pesquisa se conectarem pela fibra \xF3ptica."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: d6544457b70dd5e378c8b37364654d8b, type: 3}
     duracao: 0
   - id: fim
     texto: Com a rede pronta, as ideias circulam. Vamos ver uma delas virar objeto.
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: fc7960d5aa0b03695bae6718852ad127, type: 3}
     duracao: 0

@@ -10,7 +10,7 @@ namespace TrilhaDaInovacao.EditorTools
     public class ImportadorModelos : AssetPostprocessor
     {
         // Mudou a regra de importação? Suba a versão para o Unity reimportar.
-        public override uint GetVersion() => 3;
+        public override uint GetVersion() => 4;
 
         void OnPreprocessModel()
         {
@@ -28,6 +28,22 @@ namespace TrilhaDaInovacao.EditorTools
             // Legível só no editor: o construtor mescla as malhas; os originais não vão para o build.
             importador.isReadable = true;
             importador.materialImportMode = ModelImporterMaterialImportMode.ImportViaMaterialDescription;
+        }
+
+        /// <summary>
+        /// Paletas dos modelos feitos no Blender (Ferramentas/blender): cada cor é um
+        /// quadradinho de poucos pixels, então nada de mipmap, filtro ou compressão,
+        /// que misturariam as cores vizinhas.
+        /// </summary>
+        void OnPreprocessTexture()
+        {
+            if (!assetPath.StartsWith("Assets/TrilhaDaInovacao/Modelos/") || !assetPath.EndsWith("-paleta.png")) return;
+
+            var importador = (TextureImporter)assetImporter;
+            importador.mipmapEnabled = false;
+            importador.filterMode = UnityEngine.FilterMode.Point;
+            importador.textureCompression = TextureImporterCompression.Uncompressed;
+            importador.wrapMode = UnityEngine.TextureWrapMode.Clamp;
         }
     }
 }

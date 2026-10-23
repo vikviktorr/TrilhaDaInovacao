@@ -14,6 +14,7 @@ namespace TrilhaDaInovacao.EditorTools
     public static class Roteiro
     {
         const string Pasta = "Assets/TrilhaDaInovacao/Roteiro";
+        public const string PastaVozes = "Assets/TrilhaDaInovacao/Voz";
 
         public const string Geral = "00_Geral";
 
@@ -28,7 +29,8 @@ namespace TrilhaDaInovacao.EditorTools
         {
             ("resultado",
                 "O lançamento aconteceu, mas uma anomalia levou à perda da missão. O PION-BR2 não chegou à órbita.",
-                "O lançamento aconteceu, mas uma anomalia levou à perda da missão.")
+                "O lançamento aconteceu, mas uma anomalia levou à perda da missão."),
+            ("contagem", "Five, four, three, two, one", "Cinco, quatro, três, dois, um")
         };
 
         public static Dictionary<string, SceneScript> CriarOuAtualizar()
@@ -89,8 +91,11 @@ namespace TrilhaDaInovacao.EditorTools
                     {
                         ("intro", "2 de março de 2018. O SENAI inaugura seu primeiro Laboratório Aberto no Maranhão."),
                         ("juntos", "Estudantes, pesquisadores e empreendedores trabalham juntos aqui."),
+                        ("estudante", "Oi! Cada post-it nessa parede é uma ideia da turma."),
                         ("dica", "Encoste a mão na lâmpada sobre a bancada."),
                         ("ideia", "Aqui, uma ideia pode ganhar forma de protótipo."),
+                        ("pesquisador", "A impressora 3D monta a peça camada por camada."),
+                        ("empreendedora", "Com o protótipo pronto, dá para testar e virar negócio!"),
                         ("fim", "Pronto! Agora, vamos acelerar a conexão da cidade.")
                     }),
 
@@ -105,17 +110,23 @@ namespace TrilhaDaInovacao.EditorTools
                         ("fim", "Agora, a última parada: de volta a Alcântara.")
                     }),
 
-                [Nomes[6]] = Garantir(Nomes[6], "Lançamentos em Alcântara", "2023", 60f,
+                [Nomes[6]] = Garantir(Nomes[6], "Lançamentos em Alcântara", "2023", 75f,
                     "HANBIT-TLV (Innospace) levou o SISNAV em 2023 (AEB, 2024). HANBIT-Nano, 2025: primeiro " +
-                    "lançamento comercial do Brasil, com o PION-BR2 (UFMA); anomalia e perda da missão (AEB, 2026).", new[]
+                    "lançamento comercial do Brasil, com o PION-BR2 (UFMA); anomalia e perda da missão (AEB, 2026); causa: vazamento " +
+                    "na vedação da câmara de combustão do 1º estágio aos 33 s de voo (Innospace e CENIPA, 2026).", new[]
                     {
                         ("intro2023", "2023. O foguete HANBIT-TLV, da Innospace, sai de Alcântara."),
                         ("sisnav", "Dentro dele, o SISNAV, sistema brasileiro de navegação, foi levado para testes."),
                         ("intro2025", "2025. O HANBIT-Nano fará o primeiro lançamento comercial a partir do Brasil."),
                         ("pion", "Entre as cargas está o PION-BR2, ligado à UFMA..."),
                         ("decolar", "Nossa, o foguete vai decolar agora!"),
-                        ("contagem", "Five, four, three, two, one"),
+                        ("contagem", "Cinco, quatro, três, dois, um"),
                         ("resultado", "O lançamento aconteceu, mas uma anomalia levou à perda da missão."),
+                        ("causa", "Aos 33 segundos de voo, uma vedação do motor do primeiro estágio falhou."),
+                        ("causa2", "O gás quente vazou e a câmara de combustão rompeu."),
+                        ("causa3", "O sistema de segurança destruiu o foguete no ar, para proteger quem estava em solo."),
+                        ("investigacao", "A investigação com o CENIPA achou vedações deformadas na montagem."),
+                        ("licao", "Agora, a montagem do motor tem mais controle e testes."),
                         ("resultado2", "O PION-BR2 não chegou à órbita."),
                         ("reconstituicao", "Reconstituição feita para este projeto.")
                     }),
@@ -129,8 +140,28 @@ namespace TrilhaDaInovacao.EditorTools
                     })
             };
 
+            foreach (var roteiro in roteiros.Values) LigarVozes(roteiro);
             AssetDatabase.SaveAssets();
             return roteiros;
+        }
+
+        /// <summary>
+        /// Liga cada fala à voz gerada por Ferramentas/voz/gerar_vozes.py
+        /// (Voz/&lt;roteiro&gt;/&lt;id&gt;.ogg). Uma voz gravada pela equipe e
+        /// arrastada para o campo "audio" de outra pasta nunca é trocada.
+        /// </summary>
+        static void LigarVozes(SceneScript roteiro)
+        {
+            foreach (var fala in roteiro.falas)
+            {
+                if (fala == null) continue;
+                var atual = fala.audio != null ? AssetDatabase.GetAssetPath(fala.audio) : null;
+                if (atual != null && !atual.StartsWith(PastaVozes)) continue;
+                var gerada = AssetDatabase.LoadAssetAtPath<AudioClip>($"{PastaVozes}/{roteiro.name}/{fala.id}.ogg");
+                if (gerada == fala.audio) continue;
+                fala.audio = gerada;
+                EditorUtility.SetDirty(roteiro);
+            }
         }
 
         static SceneScript Garantir(string arquivo, string titulo, string ano, float previsto, string fonte,

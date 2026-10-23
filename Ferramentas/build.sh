@@ -22,6 +22,12 @@ rodar() {
 
 [ -d Assets/TrilhaDaInovacao/Modelos/Kenney ] || Ferramentas/baixar-modelos.sh
 
+# Vozes do roteiro (dublagem por IA): só regera as falas que mudaram. Sem o
+# Piper instalado, usa as vozes que já estão no repositório.
+if [ -x "${PIPER:-$HOME/.local/opt/piper/piper}" ]; then
+  Ferramentas/voz/gerar_vozes.py
+fi
+
 if [ -z "${SEM_SETUP:-}" ]; then
   rodar setup -buildTarget "Linux64" -executeMethod TrilhaDaInovacao.EditorTools.PipelineDeSetup.Tudo
 fi

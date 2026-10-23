@@ -14,6 +14,11 @@ namespace TrilhaDaInovacao
         public AudioSource somImpressora;
         public AudioSource ambiente;
 
+        [Header("Figurantes que falam")]
+        public Figurante estudante;
+        public Figurante pesquisador;
+        public Figurante empreendedora;
+
         protected override IEnumerator Rodar()
         {
             Cena1Telma.Tocar(ambiente, "oficina", true, 0.35f);
@@ -26,13 +31,16 @@ namespace TrilhaDaInovacao
             brilhoLampada.Definir(true);
             ctx.Enquadrar(lampada.transform.position);
             yield return Dizer("juntos");
+            yield return DizerPor(estudante, "estudante");
 
             yield return EsperarToque(lampada, "dica");
             brilhoLampada.Definir(false);
 
             var fabricacao = StartCoroutine(Fabricar());
             yield return Dizer("ideia");
+            yield return DizerPor(pesquisador, "pesquisador");
             yield return fabricacao;
+            yield return DizerPor(empreendedora, "empreendedora");
             ctx.Capturar("2018");
             yield return Dizer("fim");
         }

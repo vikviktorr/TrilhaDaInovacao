@@ -20,23 +20,23 @@ MonoBehaviour:
   falas:
   - id: intro
     texto: "Alc\xE2ntara, 1994. Aqui acontece a campanha Guar\xE1."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 33e2548671b75c2f8831acfbb15b7059, type: 3}
     duracao: 0
   - id: pesquisadores
     texto: "Pesquisadores do Brasil e dos Estados Unidos estudaram juntos essa regi\xE3o
       da atmosfera."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 45ab01f0317c715b39d6da815f247732, type: 3}
     duracao: 0
   - id: dica
     texto: "D\xEA um passo at\xE9 a marca do radar no ch\xE3o."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 048b0c005bc7d93b185a50ea7542eae8, type: 3}
     duracao: 0
   - id: ionosfera
     texto: Essa camada se chama ionosfera. Foguetes e instrumentos em terra a estudaram.
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: e352274d461e6bd0983e902eefd3e0a4, type: 3}
     duracao: 0
   - id: fim
     texto: "O INPE e a NASA trabalharam juntos nessa miss\xE3o. Pr\xF3xima parada:
       2009."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: a7f89ab8e623983d3bca3205cf6b05fa, type: 3}
     duracao: 0

@@ -730,7 +730,7 @@ namespace TrilhaDaInovacao.EditorTools
         // ------------------------------------------------------------------
         // 2018: maker space com pessoas, robô e estações de trabalho.
         // ------------------------------------------------------------------
-        static void Decorar2018(Transform q)
+        static (Figurante estudante, Figurante pesquisador, Figurante empreendedora) Decorar2018(Transform q)
         {
             const string f = "Kenney/furniture-kit/";
             const string c = "Kenney/mini-characters/";
@@ -743,7 +743,10 @@ namespace TrilhaDaInovacao.EditorTools
             postIts.repeticoes = new Vector2Int(1, 2);
             var laser = Personagem(c + "character-male-b", q, new Vector3(0.7f, 0f, 2.5f), 90f, 1.72f, "interact-right", "interact-left");
             laser.intervalo = new Vector2(2f, 5f);
-            Personagem(c + "character-female-c", q, new Vector3(-1.65f, 0f, 1.85f), -150f, 1.6f, "emote-yes", "emote-no");
+            var notebook = Personagem(c + "character-female-c", q, new Vector3(-1.65f, 0f, 1.85f), -150f, 1.6f, "emote-yes", "emote-no");
+            DarVoz(postIts, "Estudante");
+            DarVoz(laser, "Pesquisador");
+            DarVoz(notebook, "Empreendedora");
 
             Modelo(f + "desk", q, new Vector3(-2.3f, 0f, 0.3f), 90f, 1.2f, Medida.Profundidade);
             Modelo(f + "laptop", q, new Vector3(-2.3f, 0.76f, 0.3f), 90f, 0.32f, Medida.Largura);
@@ -757,6 +760,25 @@ namespace TrilhaDaInovacao.EditorTools
             // Bancada secundária com braço robótico.
             Bloco("Bancada do robô", q, new Vector3(2.4f, 0.4f, 1.2f), new Vector3(0.7f, 0.8f, 1.2f), Opaco("2018Bancada", Color.white));
             Modelo("Kenney/factory-kit/robot-arm-a", q, new Vector3(2.4f, 0.8f, 1.2f), -90f, 0.75f);
+            return (postIts, laser, notebook);
+        }
+
+        /// <summary>Fonte 3D da voz na cabeça do figurante, com o nome que vai na legenda.</summary>
+        static void DarVoz(Figurante figurante, string papel)
+        {
+            if (figurante == null) return;
+            figurante.papel = papel;
+            var fonte = new GameObject("Voz").AddComponent<AudioSource>();
+            fonte.transform.SetParent(figurante.transform.parent, false);
+            fonte.transform.localPosition = Vector3.up * 1.5f / figurante.transform.parent.localScale.y;
+            // Voz presente em todo o laboratório (volume cheio até 4 m) e só em parte
+            // 3D: dá para saber quem fala sem a distância deixá-la abaixo dos efeitos.
+            fonte.playOnAwake = false;
+            fonte.spatialBlend = 0.6f;
+            fonte.minDistance = 4f;
+            fonte.maxDistance = 12f;
+            fonte.rolloffMode = AudioRolloffMode.Logarithmic;
+            figurante.voz = fonte;
         }
 
         // ------------------------------------------------------------------
@@ -811,13 +833,13 @@ namespace TrilhaDaInovacao.EditorTools
             Modelo(s + "desk_chair", parteA, new Vector3(-2.05f, 0f, 1.1f), -90f, 0.95f);
         }
 
-        static void Decorar2025(Transform parteB, Vector3 plataforma)
+        static void Decorar2025(Transform parteB)
         {
             const string s = "Kenney/space-kit/";
             const string n = "Kenney/nature-kit/";
-            Modelo(s + "machine_generatorLarge", parteB, plataforma + new Vector3(-6f, 0f, 2f), 90f, 2.2f);
-            Modelo(s + "barrels", parteB, plataforma + new Vector3(-5f, 0f, -3f), 0f, 1.1f);
-            Modelo(s + "satelliteDish_large", parteB, new Vector3(9f, 0f, 12f), -120f, 5f);
+            // Antena de rastreio à direita e o posto de observação no mirante.
+            Modelo(s + "satelliteDish_large", parteB, new Vector3(16f, 0f, 14f), -120f, 6f);
+            Modelo(s + "barrels", parteB, new Vector3(13f, 0f, 30f), 0f, 1.1f);
             Modelo(s + "desk_computer", parteB, new Vector3(1.9f, 0f, 2.1f), 180f, 1.1f, Medida.Largura);
 
             var rng = new System.Random(2025);
@@ -825,6 +847,8 @@ namespace TrilhaDaInovacao.EditorTools
             {
                 var lado = i % 2 == 0 ? -1f : 1f;
                 var p = new Vector3(lado * (14f + (float)rng.NextDouble() * 20f), 0f, 4f + (float)rng.NextDouble() * 40f);
+                // Longe da casamata e da antena de rastreio.
+                if (Vector3.Distance(p, new Vector3(-17f, 0f, 9f)) < 10f || Vector3.Distance(p, new Vector3(16f, 0f, 14f)) < 6f) continue;
                 Modelo(n + (i % 3 == 0 ? "tree_palmBend" : "tree_palmTall"), parteB, p, (float)rng.NextDouble() * 360f,
                     6f + (float)rng.NextDouble() * 4f);
             }
@@ -832,7 +856,7 @@ namespace TrilhaDaInovacao.EditorTools
             for (var i = 0; i < 24; i++)
             {
                 var p = new Vector3(((float)rng.NextDouble() - 0.5f) * 50f, 0f, 22f + (float)rng.NextDouble() * 25f);
-                if (Mathf.Abs(p.x) < 8f) continue;
+                if (Mathf.Abs(p.x) < 13f) continue;
                 Modelo(n + "plant_bushLarge", parteB, p, (float)rng.NextDouble() * 360f, 1f + (float)rng.NextDouble());
             }
         }

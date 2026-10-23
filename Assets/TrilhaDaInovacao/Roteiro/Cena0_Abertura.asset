@@ -19,21 +19,21 @@ MonoBehaviour:
   falas:
   - id: ola
     texto: "Ol\xE1! Bem-vindo \xE0 Trilha da Inova\xE7\xE3o."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: fa1bf7b44b8c8880791b7e3b4c141d4d, type: 3}
     duracao: 0
   - id: maos
     texto: "Levante as m\xE3os. \xC9 com elas que voc\xEA vai tocar a hist\xF3ria."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 812f16860b44199ce9c5439181779ec2, type: 3}
     duracao: 0
   - id: seis
     texto: "Vamos visitar seis momentos em que o Maranh\xE3o fez hist\xF3ria na tecnologia."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 830659266b9c61c2aaaa7f2a1d0067cf, type: 3}
     duracao: 0
   - id: dica-comecar
     texto: "Toque no bot\xE3o Come\xE7ar, \xE0 sua frente."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 31e0ddbce4a938db8a432d140e0cfeb4, type: 3}
     duracao: 0
   - id: siga
     texto: "Siga a luz no ch\xE3o at\xE9 a primeira marca."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 7cb2b253daf0aefa0864350b3d8af6cf, type: 3}
     duracao: 0

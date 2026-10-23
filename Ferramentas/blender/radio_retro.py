@@ -5,7 +5,8 @@
 #   blender -b -P Ferramentas/blender/radio_retro.py -- [saida.fbx] [previa.png]
 #
 # Medidas em metros, Z para cima, frente (dial) para -Y. Objetos exportados:
-# Gabinete, Frente (moldura, grade e painel), Controles e Antena.
+# Gabinete, Frente (moldura, grade e painel), Controles e Antena, com um material
+# só (textura-paleta).
 import math
 import sys
 from pathlib import Path
@@ -171,6 +172,7 @@ facetar(antena)
 # ----------------------------------------------------------------------------
 # Exportação
 # ----------------------------------------------------------------------------
+paletizar("radio-retro-paleta", SAIDA.with_name("radio-retro-paleta.png"))
 exportar("rádio", SAIDA)
 if PREVIA:
     previa("rádio", PREVIA, camera=(-0.22, -0.58, 0.30), alvo=(-0.02, 0, 0.10))

@@ -5,8 +5,8 @@
 #   blender -b -P Ferramentas/blender/telefone_1986.py -- [saida.fbx] [previa.png]
 #
 # Medidas em metros, Z para cima, frente (disco) para -Y.
-# Objetos exportados: Corpo (base + gancho, um material só: é o alvo do brilho
-# no Unity), Disco, Fone e Fio.
+# Objetos exportados: Corpo (base + gancho: é o alvo do brilho no Unity) e
+# Detalhes (disco, fone e fio). Um material só, com textura-paleta.
 import math
 import sys
 from pathlib import Path
@@ -224,6 +224,8 @@ facetar(fio)
 # ----------------------------------------------------------------------------
 # Exportação
 # ----------------------------------------------------------------------------
+juntar("Detalhes", [disco, fone, fio])
+paletizar("telefone-1986-paleta", SAIDA.with_name("telefone-1986-paleta.png"))
 exportar("telefone", SAIDA)
 if PREVIA:
     previa("telefone", PREVIA, camera=(0.0, -0.62, 0.36), alvo=(0, 0.01, 0.085))

@@ -21,21 +21,21 @@ MonoBehaviour:
   falas:
   - id: intro
     texto: "S\xE3o Lu\xEDs, setembro de 2022. O 5G chega \xE0 cidade."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: e9af53be30dc5357a9f4283dfc917701, type: 3}
     duracao: 0
   - id: dica
     texto: Aproxime-se da torre.
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 6be46e441bf1bdce1ab7afae2bf547fb, type: 3}
     duracao: 0
   - id: anatel
     texto: A Anatel liberou a faixa de 3,5 GHz a partir de 19 de setembro.
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 4d585d9f75477331596f799be6298411, type: 3}
     duracao: 0
   - id: expansao
     texto: "A nova faixa permitiu a expans\xE3o das redes m\xF3veis na cidade."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 4152199c00d838df2a0cb94cc4e9f09d, type: 3}
     duracao: 0
   - id: fim
     texto: "Agora, a \xFAltima parada: de volta a Alc\xE2ntara."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: cf9b6f99f4cccf872ad88726fd28027c, type: 3}
     duracao: 0

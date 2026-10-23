@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -81,18 +82,15 @@ namespace TrilhaDaInovacao.EditorTools
             var poke = telefone.AddComponent<PokeTrigger>();
             poke.ConfigurarNoEditor(telefone.GetComponentsInChildren<Renderer>(), new Color(1f, 0.85f, 0.4f));
             var brilho = AdicionarPulsar(baseTelefone, new Color(1f, 0.7f, 0.2f), 1.2f, 2.5f);
-            var somTelefone = telefone.AddComponent<AudioSource>();
+            // Em um filho: o PokeTrigger já põe uma AudioSource no telefone, e o
+            // Abafador (OnAudioFilterRead) só aceita uma por objeto.
+            var somTelefone = new GameObject("Som do telefone").AddComponent<AudioSource>();
+            somTelefone.transform.SetParent(telefone.transform, false);
             somTelefone.playOnAwake = false;
             somTelefone.spatialBlend = 1f;
 
-            // Painel com o mapa simplificado de São Luís.
-            Bloco("Painel mapa", q, new Vector3(3.2f, 1.55f, 4.2f), new Vector3(0.9f, 0.7f, 0.05f), Opaco("1986Mapa", new Color(0.12f, 0.2f, 0.3f)));
-            Texto("Título mapa", q, new Vector3(3.2f, 1.97f, 4.17f), "São Luís", 0.07f, 0.9f, Color.white);
-            var pontoA = new Vector3(2.98f, 1.42f, 4.16f);
-            var pontoB = new Vector3(3.4f, 1.7f, 4.16f);
-            var pontoMat = Opaco("1986PontoMapa", Color.yellow, new Color(1f, 0.85f, 0.2f));
-            Bloco("Ponto A", q, pontoA, Vector3.one * 0.05f, pontoMat, PrimitiveType.Sphere);
-            Bloco("Ponto B", q, pontoB, Vector3.one * 0.05f, pontoMat, PrimitiveType.Sphere);
+            // Painel com o mapa do Maranhão: a ligação sai de São Luís e chega a Imperatriz.
+            var (pontoA, pontoB) = MapaMaranhao(q, new Vector3(3.2f, 1.62f, 4.2f));
 
             // Telefone de destino, numa mesa à direita.
             Bloco("Mesa", q, new Vector3(2.1f, 0.4f, 1f), new Vector3(0.6f, 0.8f, 0.5f), Opaco("1986Madeira", Color.white));
@@ -141,6 +139,71 @@ namespace TrilhaDaInovacao.EditorTools
             seq.ambiente = ambiente;
 
             return Salvar(cena, LayoutTrilha.Cenas[1]);
+        }
+
+        [System.Serializable]
+        class AnotacaoMapa
+        {
+            public float proporcao;
+            public PontoMapa[] pontos;
+        }
+
+        [System.Serializable]
+        class PontoMapa
+        {
+            public string nome;
+            public string tipo;
+            public float u;
+            public float v;
+        }
+
+        /// <summary>
+        /// Painel de parede com o mapa do Maranhão em relevo (Ferramentas/blender/mapa_maranhao.py,
+        /// contorno do IBGE), os nomes das mesorregiões e as duas cidades da ligação.
+        /// Devolve, no quadro da cena, os pontos de São Luís e de Imperatriz.
+        /// </summary>
+        static (Vector3 saoLuis, Vector3 imperatriz) MapaMaranhao(Transform q, Vector3 centroPainel)
+        {
+            const float alturaMapa = 0.98f;
+            var painel = new Vector3(0.88f, 1.12f, 0.05f);
+            Bloco("Painel mapa", q, centroPainel, painel, Opaco("1986Mapa", new Color(0.12f, 0.2f, 0.3f)));
+            var frente = centroPainel.z - painel.z / 2f;
+
+            var pontoMat = Opaco("1986PontoMapa", Color.yellow, new Color(1f, 0.85f, 0.2f));
+            var pe = centroPainel.y - alturaMapa / 2f;
+            var anotacao = AssetDatabase.LoadAssetAtPath<TextAsset>(PastaModelos + "Mapa/mapa-maranhao.json");
+            var mapa = Modelo("Mapa/mapa-maranhao", q, new Vector3(centroPainel.x, pe, frente - 0.011f), 180f, alturaMapa);
+            if (mapa == null || anotacao == null)
+            {
+                // Sem o modelo: só os dois pontos, onde ficariam no mapa.
+                var a = centroPainel + new Vector3(0.1f, 0.33f, -0.04f);
+                var b = centroPainel + new Vector3(-0.31f, 0.01f, -0.04f);
+                Bloco("Ponto São Luís", q, a, Vector3.one * 0.04f, pontoMat, PrimitiveType.Sphere);
+                Bloco("Ponto Imperatriz", q, b, Vector3.one * 0.04f, pontoMat, PrimitiveType.Sphere);
+                return (a, b);
+            }
+
+            var dados = JsonUtility.FromJson<AnotacaoMapa>(anotacao.text);
+            var largura = alturaMapa * dados.proporcao;
+            var frenteRelevo = frente - 0.025f;
+            var vermelho = new Color(0.62f, 0.08f, 0.12f);
+            Vector3 saoLuis = default, imperatriz = default;
+            foreach (var p in dados.pontos)
+            {
+                var pos = new Vector3(centroPainel.x + (p.u - 0.5f) * largura, pe + p.v * alturaMapa, frenteRelevo);
+                if (p.tipo == "regiao")
+                {
+                    Texto($"Região {p.nome.Replace('\n', ' ')}", q, pos, p.nome, 0.026f, 0.2f, vermelho);
+                    continue;
+                }
+
+                Bloco($"Ponto {p.nome}", q, pos, Vector3.one * 0.035f, pontoMat, PrimitiveType.Sphere);
+                Texto($"Cidade {p.nome}", q, pos + new Vector3(0.075f, 0.022f, 0f), p.nome, 0.028f, 0.16f, new Color(0.08f, 0.08f, 0.1f));
+                if (p.nome == "São Luís") saoLuis = pos;
+                else if (p.nome == "Imperatriz") imperatriz = pos;
+            }
+
+            return (saoLuis, imperatriz);
         }
 
         /// <summary>
@@ -345,14 +408,9 @@ namespace TrilhaDaInovacao.EditorTools
             foreach (var z in new[] { 0.65f, 1.65f })
                 Bloco("Perna", q, new Vector3(x, 0.42f, z), new Vector3(0.06f, 0.84f, 0.06f), perna);
 
-            var centroIlha = new Vector3(0f, 0.878f, 1.22f);
-            var ilha = new GameObject("Ilha de São Luís (estilizada)");
-            ilha.transform.SetParent(q, false);
-            ilha.transform.localPosition = centroIlha;
-            ilha.AddComponent<MeshFilter>().sharedMesh = MalhaIlha(0.78f, 0.46f);
-            var ilhaR = ilha.AddComponent<MeshRenderer>();
-            ilhaR.sharedMaterial = Opaco("2009Ilha", new Color(0.12f, 0.32f, 0.36f), new Color(0.02f, 0.12f, 0.14f));
-            ilhaR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // Mapa da Ilha de São Luís em relevo (Ferramentas/blender/mapa_sao_luis.py).
+            var centroIlha = new Vector3(0f, 0.875f, 1.2f);
+            var basesPinos = MapaSaoLuis(q, centroIlha, 1.05f);
 
             // Os seis pinos (instituições) e o ponto grande para tocar.
             var ponto = new Vector3(0f, 0.96f, 0.62f);
@@ -360,10 +418,9 @@ namespace TrilhaDaInovacao.EditorTools
             var hasteMat = Opaco("2009Haste", new Color(0.7f, 0.7f, 0.75f));
             var pinos = new List<Renderer>();
             var feixes = new List<LinhaProgressiva>();
-            for (var i = 0; i < 6; i++)
+            for (var i = 0; i < basesPinos.Length; i++)
             {
-                var a = (i * 60f + 20f) * Mathf.Deg2Rad;
-                var baseP = centroIlha + new Vector3(Mathf.Cos(a) * 0.48f, 0f, Mathf.Sin(a) * 0.27f);
+                var baseP = basesPinos[i];
                 Bloco($"Haste {i + 1}", q, baseP + Vector3.up * 0.06f, new Vector3(0.01f, 0.06f, 0.01f), hasteMat, PrimitiveType.Cylinder);
                 var cabeca = Bloco($"Pino {i + 1}", q, baseP + Vector3.up * 0.13f, Vector3.one * 0.045f, cabecaPino, PrimitiveType.Sphere);
                 pinos.Add(cabeca.GetComponent<Renderer>());
@@ -436,30 +493,84 @@ namespace TrilhaDaInovacao.EditorTools
         }
 
         /// <summary>
-        /// Contorno estilizado da ilha: elipse com recortes suaves (não é um mapa
-        /// cartográfico). Salvo como asset para a cena referenciar.
+        /// Mapa da Ilha de São Luís deitado na mesa, com os nomes dos municípios.
+        /// Devolve onde ficam os pinos das instituições (pontos "rede" do JSON).
+        /// Sem o modelo, os pinos ficam numa elipse em volta do centro.
         /// </summary>
-        static Mesh MalhaIlha(float rx, float rz)
+        static Vector3[] MapaSaoLuis(Transform q, Vector3 centro, float profundidade)
         {
-            const string caminho = PastaGerado + "/IlhaSaoLuis.asset";
-            const int n = 72;
-            var vertices = new Vector3[n + 1];
-            var triangulos = new int[n * 3];
-            vertices[0] = Vector3.zero;
-            for (var i = 0; i < n; i++)
+            var anotacao = AssetDatabase.LoadAssetAtPath<TextAsset>(PastaModelos + "Mapa/mapa-sao-luis.json");
+            var mapa = Modelo("Mapa/mapa-sao-luis", q, centro, 180f, profundidade, Medida.Profundidade);
+            if (mapa == null || anotacao == null)
             {
-                var a = i / (float)n * Mathf.PI * 2f;
-                var r = 1f + 0.12f * Mathf.Sin(3f * a + 1f) + 0.08f * Mathf.Sin(5f * a + 2f) + 0.05f * Mathf.Sin(9f * a);
-                vertices[i + 1] = new Vector3(Mathf.Cos(a) * rx * r, 0f, Mathf.Sin(a) * rz * r);
-                triangulos[i * 3] = 0;
-                triangulos[i * 3 + 1] = i == n - 1 ? 1 : i + 2;
-                triangulos[i * 3 + 2] = i + 1;
+                return Enumerable.Range(0, 6).Select(i =>
+                {
+                    var a = (i * 60f + 20f) * Mathf.Deg2Rad;
+                    return centro + new Vector3(Mathf.Cos(a) * 0.48f, 0f, Mathf.Sin(a) * 0.27f);
+                }).ToArray();
+            }
+
+            var dados = JsonUtility.FromJson<AnotacaoMapa>(anotacao.text);
+            var largura = profundidade * dados.proporcao;
+            // Acima do relevo mais alto (São Luís, ~4,5 cm depois da escala).
+            var topo = centro.y + 0.048f;
+            var pinos = new List<Vector3>();
+            foreach (var p in dados.pontos)
+            {
+                var pos = new Vector3(centro.x + (p.u - 0.5f) * largura, topo, centro.z + (p.v - 0.5f) * profundidade);
+                if (p.tipo == "rede")
+                {
+                    pinos.Add(pos);
+                    continue;
+                }
+
+                // Nome do município deitado na mesa, inclinado para o visitante ler.
+                var rotulo = Texto($"Município {p.nome.Replace('\n', ' ')}", q, pos + Vector3.up * 0.004f, p.nome, 0.032f, 0.3f,
+                    new Color(0.12f, 0.12f, 0.25f));
+                rotulo.fontStyle = FontStyles.Bold;
+                rotulo.transform.localRotation = Quaternion.Euler(85f, 0f, 0f);
+            }
+
+            return pinos.ToArray();
+        }
+
+        /// <summary>
+        /// Céu estrelado: quadradinhos virados para o visitante numa cúpula (um draw
+        /// call só). Posições fixas (semente) para a cena sair igual a cada construção.
+        /// </summary>
+        static Mesh MalhaEstrelas(float raio, int quantidade)
+        {
+            const string caminho = PastaGerado + "/Estrelas.asset";
+            var rng = new System.Random(1225);
+            var vertices = new Vector3[quantidade * 4];
+            var triangulos = new int[quantidade * 6];
+            for (var i = 0; i < quantidade; i++)
+            {
+                // Mais estrelas perto do zênite que no horizonte (a neblina apaga as baixas).
+                var elevacao = Mathf.Asin(Mathf.Lerp(0.12f, 1f, (float)rng.NextDouble()));
+                var azimute = (float)rng.NextDouble() * Mathf.PI * 2f;
+                var dir = new Vector3(Mathf.Cos(elevacao) * Mathf.Sin(azimute), Mathf.Sin(elevacao), Mathf.Cos(elevacao) * Mathf.Cos(azimute));
+                var tamanho = raio * (0.0009f + 0.0022f * (float)(rng.NextDouble() * rng.NextDouble() * rng.NextDouble()));
+                var direita = Vector3.Cross(Vector3.up, dir).normalized;
+                if (direita == Vector3.zero) direita = Vector3.right;
+                var cima = Vector3.Cross(dir, direita);
+                var centro = dir * raio;
+                vertices[i * 4] = centro + (-direita - cima) * tamanho;
+                vertices[i * 4 + 1] = centro + (direita - cima) * tamanho;
+                vertices[i * 4 + 2] = centro + (direita + cima) * tamanho;
+                vertices[i * 4 + 3] = centro + (-direita + cima) * tamanho;
+                triangulos[i * 6] = i * 4;
+                triangulos[i * 6 + 1] = i * 4 + 2;
+                triangulos[i * 6 + 2] = i * 4 + 1;
+                triangulos[i * 6 + 3] = i * 4;
+                triangulos[i * 6 + 4] = i * 4 + 3;
+                triangulos[i * 6 + 5] = i * 4 + 2;
             }
 
             var malha = AssetDatabase.LoadAssetAtPath<Mesh>(caminho);
             if (malha == null)
             {
-                malha = new Mesh { name = "Ilha de São Luís" };
+                malha = new Mesh { name = "Estrelas" };
                 AssetDatabase.CreateAsset(malha, caminho);
             }
 
@@ -512,9 +623,9 @@ namespace TrilhaDaInovacao.EditorTools
             poke.ConfigurarNoEditor(new[] { bulbo.GetComponent<Renderer>() }, new Color(1f, 0.9f, 0.4f));
             var brilhoLampada = AdicionarPulsar(bulbo, new Color(1f, 0.85f, 0.3f), 1.5f, 1.2f, 0.08f);
 
-            Bloco("Suporte do monitor", q, new Vector3(0.48f, 1.0f, 1.05f), new Vector3(0.05f, 0.2f, 0.05f), Opaco("Metal", Color.white));
-            Bloco("Monitor", q, new Vector3(0.48f, 1.25f, 1.05f), new Vector3(0.62f, 0.4f, 0.03f), Opaco("2018Monitor", new Color(0.1f, 0.1f, 0.12f)));
-            Bloco("Tela CAD", q, new Vector3(0.48f, 1.25f, 1.033f), new Vector3(0.57f, 0.35f, 0.005f), Opaco("2018Tela", Color.black, new Color(0.04f, 0.08f, 0.2f)));
+            Bloco("Suporte do monitor", q, new Vector3(0.52f, 1.0f, 1.05f), new Vector3(0.05f, 0.2f, 0.05f), Opaco("Metal", Color.white));
+            Bloco("Monitor", q, new Vector3(0.52f, 1.25f, 1.05f), new Vector3(0.62f, 0.4f, 0.03f), Opaco("2018Monitor", new Color(0.1f, 0.1f, 0.12f)));
+            Bloco("Tela CAD", q, new Vector3(0.52f, 1.25f, 1.033f), new Vector3(0.57f, 0.35f, 0.005f), Opaco("2018Tela", Color.black, new Color(0.04f, 0.08f, 0.2f)));
             var cadGo = new GameObject("Desenho digital (CAD)");
             cadGo.transform.SetParent(q, false);
             var cadLinha = cadGo.AddComponent<LineRenderer>();
@@ -522,40 +633,62 @@ namespace TrilhaDaInovacao.EditorTools
             cadLinha.sharedMaterial = LinhaSolida("Linha");
             cadLinha.startColor = cadLinha.endColor = new Color(0.4f, 0.9f, 1f);
             var cad = cadGo.AddComponent<LinhaProgressiva>();
-            cad.pontos = DesenhoLampada(new Vector3(0.48f, 1.28f, 1.028f), 0.085f);
+            cad.pontos = DesenhoLampada(new Vector3(0.52f, 1.28f, 1.028f), 0.085f);
 
+            // Impressora FDM cartesiana (Ender-3) em tamanho real, feita no Blender
+            // (Ferramentas/blender/impressora_3d.py) com as partes de cada eixo separadas.
             var impressoraRaiz = new GameObject("Impressora 3D").transform;
             impressoraRaiz.SetParent(q, false);
-            impressoraRaiz.localPosition = new Vector3(0.02f, 0.905f, 0.92f);
-            var quadroMat = Opaco("2018Impressora", new Color(0.15f, 0.15f, 0.17f), metal: 0.4f);
-            foreach (var x in new[] { -0.15f, 0.15f })
-            foreach (var z in new[] { -0.15f, 0.15f })
-                Bloco("Coluna", impressoraRaiz, new Vector3(x, 0.17f, z), new Vector3(0.02f, 0.34f, 0.02f), quadroMat);
-            Bloco("Topo", impressoraRaiz, new Vector3(0f, 0.34f, 0f), new Vector3(0.32f, 0.02f, 0.32f), quadroMat);
-            Bloco("Mesa", impressoraRaiz, new Vector3(0f, 0.02f, 0f), new Vector3(0.26f, 0.01f, 0.26f), Opaco("2018Mesa", new Color(0.2f, 0.2f, 0.25f)));
+            impressoraRaiz.localPosition = new Vector3(-0.08f, 0.905f, 0.86f);
+            var impressora = impressoraRaiz.gameObject.AddComponent<ImpressaoEmCamadas>();
+            var modeloImpressora = Modelo("Impressora/impressora-3d", impressoraRaiz, Vector3.zero, 180f, 0.675f);
+            var pontoBico = new Vector3(0f, 0.025f, 0f);
+            if (modeloImpressora != null)
+            {
+                var m = modeloImpressora.transform;
+                impressora.mesa = m.Find("Mesa");
+                impressora.portico = m.Find("Portico");
+                impressora.cabecote = m.Find("Cabecote");
+                // A mesa foi modelada centrada sob o bico: o topo dela no centro é
+                // onde sai a primeira camada.
+                var b = impressora.mesa.GetComponent<Renderer>().bounds;
+                pontoBico = impressoraRaiz.InverseTransformPoint(new Vector3(b.center.x, b.max.y, b.center.z));
+            }
+            else
+            {
+                Bloco("Mesa", impressoraRaiz, new Vector3(0f, 0.02f, 0f), new Vector3(0.24f, 0.01f, 0.24f), Opaco("2018Mesa", new Color(0.2f, 0.2f, 0.25f)));
+            }
+
             var pecaPivo = new GameObject("Peça (pivô)").transform;
             pecaPivo.SetParent(impressoraRaiz, false);
-            pecaPivo.localPosition = new Vector3(0f, 0.025f, 0f);
-            Bloco("Peça", pecaPivo, new Vector3(0f, 0.06f, 0f), new Vector3(0.12f, 0.12f, 0.12f), Opaco("2018Filamento", new Color(0.95f, 0.5f, 0.15f), new Color(0.2f, 0.08f, 0f)));
-            var bico = Bloco("Bico", impressoraRaiz, new Vector3(0f, 0.06f, 0f), new Vector3(0.035f, 0.04f, 0.035f), laranja);
-            var impressora = impressoraRaiz.gameObject.AddComponent<ImpressaoEmCamadas>();
+            pecaPivo.localPosition = pontoBico;
+            Bloco("Peça", pecaPivo, new Vector3(0f, 0.5f, 0f), Vector3.one, Opaco("2018Filamento", new Color(0.22f, 0.87f, 0.93f), new Color(0.02f, 0.12f, 0.14f)));
+            pecaPivo.localScale = new Vector3(0.06f, 0.06f, 0.06f);
             impressora.peca = pecaPivo;
-            impressora.bico = bico.transform;
             var somImpressora = Fonte("Som da impressora", q, impressoraRaiz.position, true);
 
             // Protótipo pronto: um pequeno drone que gira na frente da bancada.
             var drone = new GameObject("Protótipo (drone)").transform;
             drone.SetParent(q, false);
-            drone.localPosition = new Vector3(0f, 1.08f, 0.6f);
-            var corpo = Opaco("2018Drone", new Color(0.2f, 0.22f, 0.26f), smooth: 0.6f);
-            Bloco("Corpo", drone, Vector3.zero, new Vector3(0.12f, 0.045f, 0.12f), corpo);
-            Bloco("Braço 1", drone, Vector3.zero, new Vector3(0.36f, 0.015f, 0.025f), corpo, rotacao: new Vector3(0f, 45f, 0f));
-            Bloco("Braço 2", drone, Vector3.zero, new Vector3(0.36f, 0.015f, 0.025f), corpo, rotacao: new Vector3(0f, -45f, 0f));
-            var helice = Transparente("2018Helice", new Color(0.6f, 0.85f, 1f, 0.45f));
-            for (var i = 0; i < 4; i++)
+            drone.localPosition = new Vector3(0.4f, 1.15f, 0.6f);
+            // Quadricóptero de PLA ciano feito na impressora (Ferramentas/blender/drone.py).
+            var modeloDrone = Modelo("Drone/drone", drone, new Vector3(0f, -0.03f, 0f), 0f, 0.44f, Medida.MaiorLado);
+            if (modeloDrone != null)
             {
-                var a = (45f + i * 90f) * Mathf.Deg2Rad;
-                Bloco($"Hélice {i + 1}", drone, new Vector3(Mathf.Cos(a) * 0.13f, 0.02f, Mathf.Sin(a) * 0.13f), new Vector3(0.1f, 0.003f, 0.1f), helice, PrimitiveType.Cylinder);
+                foreach (Transform parte in modeloDrone.transform)
+                {
+                    if (!parte.name.StartsWith("Helice")) continue;
+                    var giro = parte.gameObject.AddComponent<Girar>();
+                    giro.eixo = parte.InverseTransformDirection(drone.up);
+                    giro.grausPorSegundo = parte.name.EndsWith("1") || parte.name.EndsWith("3") ? 1440f : -1440f;
+                }
+            }
+            else
+            {
+                var corpo = Opaco("2018Drone", new Color(0.2f, 0.22f, 0.26f), smooth: 0.6f);
+                Bloco("Corpo", drone, Vector3.zero, new Vector3(0.12f, 0.045f, 0.12f), corpo);
+                Bloco("Braço 1", drone, Vector3.zero, new Vector3(0.36f, 0.015f, 0.025f), corpo, rotacao: new Vector3(0f, 45f, 0f));
+                Bloco("Braço 2", drone, Vector3.zero, new Vector3(0.36f, 0.015f, 0.025f), corpo, rotacao: new Vector3(0f, -45f, 0f));
             }
 
             drone.gameObject.AddComponent<Girar>().grausPorSegundo = 45f;
@@ -575,9 +708,12 @@ namespace TrilhaDaInovacao.EditorTools
 
             var ambiente = Fonte("Oficina", q, q.TransformPoint(new Vector3(0f, 2f, 2.5f)), false);
 
-            Decorar2018(q);
+            var (estudante, pesquisador, empreendedora) = Decorar2018(q);
 
             var seq = Sequencia<Cena4Senai>("Cena 4 · 2018 SENAI", 4, 4);
+            seq.estudante = estudante;
+            seq.pesquisador = pesquisador;
+            seq.empreendedora = empreendedora;
             seq.lampada = poke;
             seq.brilhoLampada = brilhoLampada;
             seq.desenhoDigital = cad;
@@ -735,9 +871,12 @@ namespace TrilhaDaInovacao.EditorTools
         static string Construir2025()
         {
             var cena = NovaCena();
-            Ambiente(new Color(0.55f, 0.58f, 0.62f),
-                Ceu("CeuDia", new Color(0.45f, 0.6f, 0.9f), 1.25f, 1f, new Color(0.35f, 0.33f, 0.3f)),
-                new Color(1f, 0.96f, 0.88f), 1.2f, new Vector3(45f, 200f, 0f), true, new Color(0.7f, 0.78f, 0.88f), 0.004f);
+            // Noite: o HANBIT-Nano decolou às 22h13 de 22 de dezembro de 2025 (FAB).
+            // O "sol" fica abaixo do horizonte para o céu procedural escurecer; quem
+            // ilumina são o luar fraco (ambiente), os refletores da plataforma e a lua.
+            Ambiente(new Color(0.24f, 0.27f, 0.38f),
+                Ceu("CeuNoite", new Color(0.1f, 0.18f, 0.5f), 1.1f, 0.9f, new Color(0.03f, 0.04f, 0.06f), 0f),
+                new Color(0.55f, 0.62f, 0.9f), 0.12f, new Vector3(-7f, 160f, 0f), true, new Color(0.06f, 0.08f, 0.14f), 0.0025f);
 
             var q = Quadro(6, "Alcântara · 2023–2025");
 
@@ -776,40 +915,93 @@ namespace TrilhaDaInovacao.EditorTools
             // ---------------- Parte B: 2025, plataforma do HANBIT-Nano ----------------
             var parteB = new GameObject("Parte B · 2025 · HANBIT-Nano").transform;
             parteB.SetParent(q, false);
-            Bloco("Vegetação", parteB, new Vector3(0f, -0.08f, 20f), new Vector3(240f, 0.1f, 240f), Opaco("2025Vegetacao", new Color(0.35f, 0.42f, 0.25f)));
+            // Centro de Lançamento de Alcântara: planalto no litoral, vegetação baixa,
+            // chão de laterita avermelhada e as plataformas espalhadas pela área.
+            Bloco("Vegetação", parteB, new Vector3(0f, -0.08f, 20f), new Vector3(240f, 0.1f, 240f), Opaco("2025Vegetacao", new Color(0.24f, 0.32f, 0.18f)));
             Bloco("Mar", parteB, new Vector3(0f, -0.06f, 110f), new Vector3(400f, 0.1f, 100f), Opaco("Mar", Color.white));
-            Bloco("Pátio", parteB, new Vector3(0f, -0.05f, 14f), new Vector3(40f, 0.1f, 34f), Opaco("2025Patio", new Color(0.58f, 0.58f, 0.57f)));
+            var laterita = Opaco("2025Laterita", new Color(0.55f, 0.3f, 0.18f));
+            Bloco("Área da plataforma (laterita)", parteB, new Vector3(0f, -0.055f, 25f), new Vector3(46f, 0.1f, 40f), laterita);
+            Bloco("Mirante", parteB, new Vector3(0f, -0.05f, 1.5f), new Vector3(12f, 0.1f, 8f), Opaco("2025Patio", new Color(0.58f, 0.58f, 0.57f)));
+            var asfalto = Opaco("2025Asfalto", new Color(0.16f, 0.16f, 0.17f));
+            Bloco("Estrada da plataforma", parteB, new Vector3(0f, -0.045f, 10.5f), new Vector3(5f, 0.1f, 10f), asfalto);
+            Bloco("Estrada da casamata", parteB, new Vector3(-9f, -0.045f, 7f), new Vector3(14f, 0.1f, 4f), asfalto, rotacao: new Vector3(0f, -20f, 0f));
+            Bloco("Estrada da TMI", parteB, new Vector3(-24f, -0.045f, 55f), new Vector3(5f, 0.1f, 60f), asfalto, rotacao: new Vector3(0f, -28f, 0f));
             var gradil = Opaco("2025Gradil", new Color(0.8f, 0.6f, 0.1f));
             Bloco("Gradil", parteB, new Vector3(0f, 1f, 2.5f), new Vector3(4f, 0.05f, 0.05f), gradil);
             for (var i = 0; i <= 8; i++)
                 Bloco($"Poste {i}", parteB, new Vector3(-2f + i * 0.5f, 0.5f, 2.5f), new Vector3(0.04f, 1f, 0.04f), gradil);
 
+            // Plataforma do HANBIT-Nano (Ferramentas/blender/alcantara_cla.py): mesa de
+            // lançamento, torre umbilical, tanques de LOX e metano, refletores e para-raios.
             var plataforma = new Vector3(0f, 0f, 25f);
-            var concretoEscuro = Opaco("2025Plataforma", new Color(0.35f, 0.35f, 0.36f));
-            Bloco("Plataforma", parteB, plataforma + new Vector3(0f, 0.3f, 0f), new Vector3(7f, 0.6f, 7f), concretoEscuro);
-            var torreMat = Opaco("2025Torre", new Color(0.75f, 0.2f, 0.15f), metal: 0.3f);
-            Bloco("Torre de serviço", parteB, plataforma + new Vector3(3.4f, 11f, 0f), new Vector3(1.4f, 22f, 1.4f), torreMat);
-            Bloco("Braço superior", parteB, plataforma + new Vector3(2f, 14f, 0f), new Vector3(2f, 0.25f, 0.35f), torreMat);
-            Bloco("Braço inferior", parteB, plataforma + new Vector3(2f, 7f, 0f), new Vector3(2f, 0.25f, 0.35f), torreMat);
+            const float topoMesa = 2f;
+            var modeloPlataforma = Modelo("Alcantara/plataforma-hanbit", parteB, plataforma, 180f, 32f);
+            if (modeloPlataforma == null)
+                Bloco("Plataforma", parteB, plataforma + new Vector3(0f, topoMesa / 2f, 0f), new Vector3(7f, topoMesa, 7f), Opaco("2025Plataforma", new Color(0.35f, 0.35f, 0.36f)));
 
-            var hanbit = new GameObject("HANBIT-Nano").transform;
-            hanbit.SetParent(parteB, false);
-            hanbit.localPosition = plataforma + new Vector3(0f, 0.6f, 0f);
-            var branco = Opaco("2025Foguete", new Color(0.96f, 0.96f, 0.97f), smooth: 0.6f);
-            var preto = Opaco("2025Faixa", new Color(0.08f, 0.08f, 0.1f));
-            Bloco("Corpo", hanbit, new Vector3(0f, 8f, 0f), new Vector3(1.4f, 8f, 1.4f), branco, PrimitiveType.Cylinder);
-            Bloco("Faixa 1", hanbit, new Vector3(0f, 4.5f, 0f), new Vector3(1.43f, 0.2f, 1.43f), preto, PrimitiveType.Cylinder);
-            Bloco("Faixa 2", hanbit, new Vector3(0f, 12f, 0f), new Vector3(1.43f, 0.2f, 1.43f), preto, PrimitiveType.Cylinder);
-            Bloco("Coifa", hanbit, new Vector3(0f, 16.2f, 0f), new Vector3(1.4f, 2.6f, 1.4f), branco, PrimitiveType.Sphere);
-            for (var i = 0; i < 4; i++)
+            // Refletores acesos no alto das quatro torres de iluminação, virados para o foguete.
+            var refletor = Opaco("2025Refletor", new Color(1f, 0.97f, 0.9f), new Color(2.2f, 2.1f, 1.8f));
+            foreach (var (sx, sz) in new[] { (-1f, -1f), (1f, -1f), (-1f, 1f), (1f, 1f) })
             {
-                var a = i * 90f + 45f;
-                var dir = Quaternion.Euler(0f, a, 0f) * Vector3.forward;
-                Bloco($"Aleta {i + 1}", hanbit, new Vector3(0f, 0.9f, 0f) + dir * 0.85f, new Vector3(0.08f, 1.6f, 0.9f), preto, rotacao: new Vector3(0f, a, 0f));
+                var poste = plataforma + new Vector3(sx * 9.5f, 15.2f, sz * 9.5f);
+                var paraFoguete = Quaternion.LookRotation(plataforma + Vector3.up * 10f - poste);
+                Bloco("Refletores", parteB, poste + paraFoguete * Vector3.forward * 0.2f, new Vector3(2f, 0.8f, 0.12f), refletor,
+                    rotacao: paraFoguete.eulerAngles);
             }
 
-            var nome = Texto("Nome no foguete", hanbit, new Vector3(0f, 9f, -0.72f), "HANBIT-Nano", 0.55f, 6f, new Color(0.1f, 0.15f, 0.35f));
+            var holofote = Luz("Refletores da plataforma", parteB, plataforma + new Vector3(-9.5f, 15.2f, -9.5f), LightType.Spot,
+                new Color(1f, 0.95f, 0.85f), 9f, 45f);
+            holofote.spotAngle = 55f;
+            holofote.transform.localRotation = Quaternion.LookRotation(plataforma + Vector3.up * 11f - holofote.transform.localPosition);
+
+            // Luzes vermelhas de obstáculo aéreo no topo da torre e dos para-raios.
+            var obstaculo = Opaco("2025Obstaculo", new Color(0.8f, 0.05f, 0.05f), new Color(1.6f, 0.05f, 0.03f));
+            foreach (var topo in new[] { new Vector3(4.6f, 25.4f, 0f), new Vector3(-11.5f, 32.2f, 6.5f), new Vector3(11.5f, 32.2f, 6.5f) })
+                AdicionarPulsar(Bloco("Luz de obstáculo", parteB, plataforma + topo, Vector3.one * 0.45f, obstaculo, PrimitiveType.Sphere),
+                    new Color(1f, 0.1f, 0.05f), 2f, 0.5f);
+
+            // HANBIT-Nano: dois estágios, 21,8 m x 1,4 m, apoiado na mesa de lançamento.
+            var hanbit = new GameObject("HANBIT-Nano").transform;
+            hanbit.SetParent(parteB, false);
+            hanbit.localPosition = plataforma + new Vector3(0f, topoMesa, 0f);
+            if (Modelo("Alcantara/foguete-hanbit-nano", hanbit, Vector3.zero, 180f, 21.8f) == null)
+                Bloco("Corpo", hanbit, new Vector3(0f, 10.9f, 0f), new Vector3(1.4f, 10.9f, 1.4f), Opaco("2025Foguete", new Color(0.96f, 0.96f, 0.97f)), PrimitiveType.Cylinder);
+
+            var nome = Texto("Nome no foguete", hanbit, new Vector3(0f, 8.5f, -0.72f), "HANBIT-Nano", 0.55f, 6f, new Color(0.1f, 0.15f, 0.35f));
             nome.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            var marca = Texto("Innospace no foguete", hanbit, new Vector3(0f, 15.3f, -0.72f), "INNOSPACE", 0.38f, 3.5f, new Color(0.08f, 0.08f, 0.1f));
+            marca.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+
+            // Prédios do CLA: a Torre Móvel de Integração na plataforma do VLS, ao
+            // fundo, e a casamata (controle avançado) à esquerda do mirante.
+            Modelo("Alcantara/torre-movel-integracao", parteB, new Vector3(-46f, 0f, 82f), 152f, 34.9f);
+            AdicionarPulsar(Bloco("Luz de obstáculo", parteB, new Vector3(-46f, 35.2f, 82f), Vector3.one * 0.7f, obstaculo, PrimitiveType.Sphere),
+                new Color(1f, 0.1f, 0.05f), 2f, 0.4f);
+            Modelo("Alcantara/casamata", parteB, new Vector3(-17f, 0f, 9f), 125f, 11f);
+            Bloco("Janelas acesas", parteB, new Vector3(-13.6f, 2.2f, 7.4f), new Vector3(0.06f, 0.35f, 4f),
+                Opaco("2025JanelaAcesa", new Color(1f, 0.85f, 0.55f), new Color(1.2f, 0.95f, 0.55f)), rotacao: new Vector3(0f, 35f, 0f));
+
+            // Céu de dezembro: estrelas e lua.
+            var estrelas = new GameObject("Estrelas");
+            estrelas.transform.SetParent(parteB, false);
+            estrelas.AddComponent<MeshFilter>().sharedMesh = MalhaEstrelas(140f, 320);
+            var estrelasR = estrelas.AddComponent<MeshRenderer>();
+            estrelasR.sharedMaterial = Opaco("2025Estrela", Color.black, new Color(1.6f, 1.6f, 1.7f));
+            estrelasR.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            Bloco("Lua", parteB, new Vector3(-55f, 60f, 110f), Vector3.one * 5f, Opaco("2025Lua", Color.black, new Color(1.5f, 1.45f, 1.3f)), PrimitiveType.Sphere);
+
+            // Relógio da contagem no mirante, como nos painéis de transmissão do lançamento.
+            var relogio = new GameObject("Relógio da contagem").transform;
+            relogio.SetParent(parteB, false);
+            relogio.localPosition = new Vector3(-2.3f, 0f, 3.4f);
+            relogio.localRotation = Quaternion.Euler(0f, -25f, 0f);
+            var suporte = Opaco("2025Suporte", new Color(0.2f, 0.2f, 0.22f));
+            foreach (var x in new[] { -0.6f, 0.6f })
+                Bloco("Pé", relogio, new Vector3(x, 1f, 0.03f), new Vector3(0.06f, 2f, 0.06f), suporte);
+            Bloco("Placar", relogio, new Vector3(0f, 2.1f, 0.03f), new Vector3(1.5f, 0.75f, 0.06f), Opaco("2025Placar", new Color(0.02f, 0.02f, 0.03f)));
+            Texto("Missão", relogio, new Vector3(0f, 2.36f, -0.01f), "HANBIT-Nano · SPACEWARD · 22/12/2025", 0.07f, 1.4f, new Color(0.8f, 0.85f, 0.95f));
+            var placar = Texto("Contagem", relogio, new Vector3(0f, 2.04f, -0.01f), "T-00:10", 0.32f, 1.4f, new Color(1f, 0.2f, 0.12f));
+            placar.fontStyle = FontStyles.Bold;
 
             var fogoMat = Particula("Fogo", true);
             var fumacaMat = Particula("Fumaca", false);
@@ -833,7 +1025,31 @@ namespace TrilhaDaInovacao.EditorTools
             decolagem.clarao = clarao;
             decolagem.motor = motor;
 
-            Decorar2025(parteB, plataforma);
+            // Explosão no ar: bola de fogo, nuvem de fumaça e destroços em chamas caindo.
+            var bola = Particulas("Bola de fogo", parteB, Vector3.zero, fogoMat, 1.8f, 13f, 16f, 0f, new Color(1f, 0.6f, 0.2f), 180f, maximo: 120);
+            var fumacaExplosao = Particulas("Fumaça da explosão", parteB, Vector3.zero, fumacaMat, 8f, 6f, 22f, 0f,
+                new Color(0.35f, 0.33f, 0.32f, 0.85f), 180f, gravidade: -0.02f, maximo: 80);
+            var destrocos = Particulas("Destroços", parteB, Vector3.zero, fogoMat, 5f, 20f, 1.8f, 0f, new Color(1f, 0.75f, 0.35f), 180f,
+                gravidade: 0.9f, maximo: 120);
+            foreach (var ps in new[] { bola, fumacaExplosao, destrocos })
+            {
+                var forma = ps.shape;
+                forma.shapeType = ParticleSystemShapeType.Sphere;
+                forma.radius = 3f;
+                var principal = ps.main;
+                principal.loop = false;
+            }
+
+            decolagem.bolaDeFogo = bola;
+            decolagem.fumacaExplosao = fumacaExplosao;
+            decolagem.destrocos = destrocos;
+
+            Decorar2025(parteB);
+
+            // Engenheiro da equipe de lançamento, no mirante, que explica a falha.
+            var engenheiro = Personagem("Kenney/mini-characters/character-male-d", parteB, new Vector3(2.9f, 0f, 1.0f), -110f, 1.75f,
+                "emote-yes", "interact-right");
+            DarVoz(engenheiro, "Engenheiro");
 
             var cargas = new GameObject("Painel de cargas").transform;
             cargas.SetParent(parteB, false);
@@ -848,10 +1064,12 @@ namespace TrilhaDaInovacao.EditorTools
             resultado.SetParent(parteB, false);
             resultado.localPosition = new Vector3(0.1f, 1.6f, 1.7f);
             resultado.gameObject.AddComponent<EncararUsuario>();
-            Bloco("Fundo", resultado, new Vector3(0f, 0f, 0.02f), new Vector3(1f, 0.6f, 0.02f), Opaco("2025Resultado", new Color(0.3f, 0.06f, 0.06f)));
+            Bloco("Fundo", resultado, new Vector3(0f, 0f, 0.02f), new Vector3(1.1f, 0.82f, 0.02f), Opaco("2025Resultado", new Color(0.3f, 0.06f, 0.06f)));
             Texto("Texto", resultado, Vector3.zero,
-                "<b>Resultado da missão</b>\n<size=80%>Uma anomalia levou à perda da missão.\nO PION-BR2 não chegou à órbita.\n\n<size=70%>Fonte: AEB, Relatório de gestão 2025</size></size>",
-                0.05f, 0.95f, Color.white).rectTransform.sizeDelta = new Vector2(0.95f, 0.55f);
+                "<b>Resultado da missão</b>\n<size=80%>Uma anomalia levou à perda da missão.\nO PION-BR2 não chegou à órbita.\n\n" +
+                "Causa: vazamento na vedação da câmara de\ncombustão do 1º estágio, aos 33 s de voo.\n\n" +
+                "<size=70%>Fontes: AEB, Relatório de gestão 2025;\nInnospace e CENIPA, 2026</size></size>",
+                0.05f, 1.05f, Color.white).rectTransform.sizeDelta = new Vector2(1.05f, 0.78f);
 
             var aviso = Texto("Aviso de reconstituição", parteB, new Vector3(-0.3f, 1.12f, 2.45f), "Reconstituição feita para este projeto",
                 0.04f, 1.2f, new Color(1f, 0.95f, 0.8f)).gameObject;
@@ -868,9 +1086,14 @@ namespace TrilhaDaInovacao.EditorTools
             seq.sisnav = brilhoSisnav;
             seq.posicaoGuia2025 = guia2025;
             seq.decolagem = decolagem;
+            seq.engenheiro = engenheiro;
             seq.painelResultado = resultado;
             seq.avisoReconstituicao = aviso;
             seq.ambiente = ambiente;
+            seq.relogio = placar;
+            seq.vozContagem = Enumerable.Range(1, 5)
+                .Select(i => AssetDatabase.LoadAssetAtPath<AudioClip>($"{Roteiro.PastaVozes}/{Roteiro.Nomes[6]}/contagem-{i}.ogg"))
+                .Where(c => c != null).ToArray();
 
             // A cena abre em 2023; a parte de 2025 fica escondida até a virada.
             parteB.gameObject.SetActive(false);

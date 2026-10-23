@@ -56,6 +56,9 @@ namespace TrilhaDaInovacao
 
         protected IEnumerator Dizer(string id) => ctx.Dizer(roteiro.Obter(id));
 
+        /// <summary>Um figurante da cena diz a fala (voz no próprio personagem).</summary>
+        protected IEnumerator DizerPor(Figurante quem, string id) => ctx.Dizer(roteiro.Obter(id), quem);
+
         /// <summary>Fala sem bloquear a sequência (efeito acontecendo junto).</summary>
         protected Coroutine DizerJunto(string id) => StartCoroutine(Dizer(id));
 

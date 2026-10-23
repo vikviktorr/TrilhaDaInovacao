@@ -20,13 +20,13 @@ MonoBehaviour:
   - id: historia
     texto: "De uma central telef\xF4nica a foguetes, essa hist\xF3ria tamb\xE9m aconteceu
       no Maranh\xE3o."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: cb207721d340491cca3966e587a215cb, type: 3}
     duracao: 0
   - id: obrigado
     texto: "Obrigado por percorrer a Trilha da Inova\xE7\xE3o!"
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: cadb9961ea6ed477896eadd11fd0de82, type: 3}
     duracao: 0
   - id: retirar
     texto: "Voc\xEA j\xE1 pode retirar o \xF3culos."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: d91a243fdc1522be7968401230586c16, type: 3}
     duracao: 0

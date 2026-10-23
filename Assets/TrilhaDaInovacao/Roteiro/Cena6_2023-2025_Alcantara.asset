@@ -14,46 +14,70 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   titulo: "Lan\xE7amentos em Alc\xE2ntara"
   ano: 2023
-  tempoPrevisto: 60
+  tempoPrevisto: 75
   fonte: "HANBIT-TLV (Innospace) levou o SISNAV em 2023 (AEB, 2024). HANBIT-Nano,
     2025: primeiro lan\xE7amento comercial do Brasil, com o PION-BR2 (UFMA); anomalia
-    e perda da miss\xE3o (AEB, 2026)."
+    e perda da miss\xE3o (AEB, 2026); causa: vazamento na veda\xE7\xE3o da c\xE2mara
+    de combust\xE3o do 1\xBA est\xE1gio aos 33 s de voo (Innospace e CENIPA, 2026)."
   falas:
   - id: intro2023
     texto: "2023. O foguete HANBIT-TLV, da Innospace, sai de Alc\xE2ntara."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 5f161046d475ee043abb5550bfbf965e, type: 3}
     duracao: 0
   - id: sisnav
     texto: "Dentro dele, o SISNAV, sistema brasileiro de navega\xE7\xE3o, foi levado
       para testes."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: fbe0d4cc5ad0eea59a11fd4c1a09262e, type: 3}
     duracao: 0
   - id: intro2025
     texto: "2025. O HANBIT-Nano far\xE1 o primeiro lan\xE7amento comercial a partir
       do Brasil."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: a60280a895a5e68b49068401547f45ab, type: 3}
     duracao: 0
   - id: pion
     texto: "Entre as cargas est\xE1 o PION-BR2, ligado \xE0 UFMA..."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 51b94917cebb2ebb4802df8e14c0e05f, type: 3}
     duracao: 0
   - id: decolar
     texto: Nossa, o foguete vai decolar agora!
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 7d3cde529c9b50909a25f6f3eace9bf2, type: 3}
     duracao: 0
   - id: contagem
-    texto: Five, four, three, two, one
+    texto: "Cinco, quatro, tr\xEAs, dois, um"
     audio: {fileID: 0}
     duracao: 0
   - id: resultado
     texto: "O lan\xE7amento aconteceu, mas uma anomalia levou \xE0 perda da miss\xE3o."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 489b5719ed744ab309cc9074855ce45f, type: 3}
     duracao: 0
   - id: reconstituicao
     texto: "Reconstitui\xE7\xE3o feita para este projeto."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 6cd679023ef840e87a56eff8d5c171a0, type: 3}
     duracao: 0
   - id: resultado2
     texto: "O PION-BR2 n\xE3o chegou \xE0 \xF3rbita."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: cebfbc9ccbfc840d9a0f829d19a8fca5, type: 3}
+    duracao: 0
+  - id: causa
+    texto: "Aos 33 segundos de voo, uma veda\xE7\xE3o do motor do primeiro est\xE1gio
+      falhou."
+    audio: {fileID: 8300000, guid: ba1f17a274ac1f89d8bfe6efda81fa97, type: 3}
+    duracao: 0
+  - id: causa2
+    texto: "O g\xE1s quente vazou e a c\xE2mara de combust\xE3o rompeu."
+    audio: {fileID: 8300000, guid: a9246fcd1b8034ac7a43c7345d627124, type: 3}
+    duracao: 0
+  - id: causa3
+    texto: "O sistema de seguran\xE7a destruiu o foguete no ar, para proteger quem
+      estava em solo."
+    audio: {fileID: 8300000, guid: b17e7c050c5b6c352a7d5df48163afef, type: 3}
+    duracao: 0
+  - id: investigacao
+    texto: "A investiga\xE7\xE3o com o CENIPA achou veda\xE7\xF5es deformadas na
+      montagem."
+    audio: {fileID: 8300000, guid: f9e5b9c2d3ddf4eff91123c5245b8e7a, type: 3}
+    duracao: 0
+  - id: licao
+    texto: Agora, a montagem do motor tem mais controle e testes.
+    audio: {fileID: 8300000, guid: 3e9ea619bb62467f2b79de6110928893, type: 3}
     duracao: 0

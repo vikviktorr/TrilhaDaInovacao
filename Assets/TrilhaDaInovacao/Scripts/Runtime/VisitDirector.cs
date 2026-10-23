@@ -37,12 +37,15 @@ namespace TrilhaDaInovacao
         float tempoLembrarCaminhada = 15f;
         [SerializeField, Tooltip("Espera no fim antes de recomeçar sozinho para o próximo visitante.")]
         float esperaReinicio = 12f;
+        [SerializeField, Range(0f, 1f), Tooltip("Volume dos efeitos e ambientes enquanto alguém fala.")]
+        float efeitosDuranteFala = 0.35f;
 
         Coroutine visita;
         Coroutine cenaEmCurso;
         EraSequence sequenciaEmCurso;
         bool pularSolicitado;
         int falaAtual;
+        Figurante falanteAtual;
         string cenaCarregada;
         AsyncOperation cargaPendente;
         bool tour;
@@ -85,6 +88,7 @@ namespace TrilhaDaInovacao
             }
 
             if (qa) relatorio = gameObject.AddComponent<QARelatorio>();
+            Abafar(efeitos);
 
             if (XRStartup.XRAtivo) operador.CarregarCalibracao();
             else desktop.Ativar();
@@ -93,6 +97,29 @@ namespace TrilhaDaInovacao
         }
 
         void OnApplicationQuit() => XRStartup.Encerrar();
+
+        void Update()
+        {
+            Abafador.Alvo = guia.Falando || falanteAtual != null ? efeitosDuranteFala : 1f;
+        }
+
+        /// <summary>Todo som da cena, menos as vozes, abaixa quando alguém fala.</summary>
+        void AbafarEfeitos(Scene cena)
+        {
+            var vozes = new HashSet<AudioSource> { guia.Voz };
+            foreach (var raiz in cena.GetRootGameObjects())
+            foreach (var figurante in raiz.GetComponentsInChildren<Figurante>(true))
+                vozes.Add(figurante.Voz);
+
+            foreach (var raiz in cena.GetRootGameObjects())
+            foreach (var fonte in raiz.GetComponentsInChildren<AudioSource>(true))
+                if (!vozes.Contains(fonte)) Abafar(fonte);
+        }
+
+        static void Abafar(AudioSource fonte)
+        {
+            if (fonte != null && fonte.GetComponent<Abafador>() == null) fonte.gameObject.AddComponent<Abafador>();
+        }
 
         IEnumerator Laco()
         {
@@ -242,6 +269,7 @@ namespace TrilhaDaInovacao
                     var cena = SceneManager.GetSceneByName(nova);
                     SceneManager.SetActiveScene(cena);
                     DynamicGI.UpdateEnvironment();
+                    AbafarEfeitos(cena);
                     cenaCarregada = nova;
                 }
             }
@@ -358,6 +386,12 @@ namespace TrilhaDaInovacao
             falaAtual++;
             guia.Falando = false;
             if (guia.Voz != null) guia.Voz.Stop();
+            if (falanteAtual != null)
+            {
+                falanteAtual.Falando = false;
+                if (falanteAtual.Voz != null) falanteAtual.Voz.Stop();
+                falanteAtual = null;
+            }
             legenda.Ocultar();
         }
 
@@ -406,22 +440,39 @@ namespace TrilhaDaInovacao
         // Serviços para as sequências
         // ------------------------------------------------------------------
 
-        /// <summary>O guia fala: voz (se gravada) + legenda pelo tempo da fala.</summary>
-        public IEnumerator Dizer(Fala fala)
+        /// <summary>
+        /// O guia (ou, com <paramref name="quem"/>, um figurante) fala: voz (se
+        /// gravada) + legenda pelo tempo da fala. A legenda de um figurante leva o nome dele.
+        /// </summary>
+        public IEnumerator Dizer(Fala fala, Figurante quem = null)
         {
             if (fala == null || string.IsNullOrEmpty(fala.texto)) yield break;
 
             var minha = ++falaAtual;
-            legenda.Definir(fala.texto);
-            guia.Falando = true;
-            if (fala.audio != null)
+            var fonte = quem != null ? quem.Voz : guia.Voz;
+            legenda.Definir(quem != null && !string.IsNullOrEmpty(quem.papel) ? $"<b>{quem.papel}:</b> {fala.texto}" : fala.texto);
+            if (quem != null)
             {
-                guia.Voz.clip = fala.audio;
-                guia.Voz.Play();
+                falanteAtual = quem;
+                quem.Falando = true;
+                guia.Falando = false;
+            }
+            else guia.Falando = true;
+
+            if (fala.audio != null && fonte != null)
+            {
+                fonte.clip = fala.audio;
+                fonte.Play();
             }
 
             var duracao = fala.Duracao * FatorFala;
             for (var t = 0f; t < duracao; t += Time.deltaTime) yield return null;
+
+            if (quem != null)
+            {
+                quem.Falando = false;
+                if (falanteAtual == quem) falanteAtual = null;
+            }
 
             if (minha != falaAtual) yield break;
             guia.Falando = false;

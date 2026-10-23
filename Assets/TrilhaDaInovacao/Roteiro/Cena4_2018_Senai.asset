@@ -21,21 +21,33 @@ MonoBehaviour:
   - id: intro
     texto: "2 de mar\xE7o de 2018. O SENAI inaugura seu primeiro Laborat\xF3rio Aberto
       no Maranh\xE3o."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 5855f28627103e94aa6f13d2ef928ca9, type: 3}
     duracao: 0
   - id: juntos
     texto: Estudantes, pesquisadores e empreendedores trabalham juntos aqui.
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: f54c95887bca0e9d78192cb7850ce90a, type: 3}
     duracao: 0
   - id: dica
     texto: "Encoste a m\xE3o na l\xE2mpada sobre a bancada."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: d0637514de0c8d861a349cd3fa92b829, type: 3}
     duracao: 0
   - id: ideia
     texto: "Aqui, uma ideia pode ganhar forma de prot\xF3tipo."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 41a9406b6448fcd5ca827fdd6e4a96af, type: 3}
     duracao: 0
   - id: fim
     texto: "Pronto! Agora, vamos acelerar a conex\xE3o da cidade."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: da2849a6ab8f5e4cc8f7643ba5efb487, type: 3}
+    duracao: 0
+  - id: estudante
+    texto: "Oi! Cada post-it nessa parede \xE9 uma ideia da turma."
+    audio: {fileID: 8300000, guid: 871c2cff834d8b6a3b101345a6c9622a, type: 3}
+    duracao: 0
+  - id: pesquisador
+    texto: "A impressora 3D monta a pe\xE7a camada por camada."
+    audio: {fileID: 8300000, guid: 750460b4b144f7b2e96ed97fb41fec16, type: 3}
+    duracao: 0
+  - id: empreendedora
+    texto: "Com o prot\xF3tipo pronto, d\xE1 para testar e virar neg\xF3cio!"
+    audio: {fileID: 8300000, guid: 84bf29f0191af2426aa8e26896e32176, type: 3}
     duracao: 0

@@ -21,23 +21,23 @@ MonoBehaviour:
   falas:
   - id: intro
     texto: "S\xE3o Lu\xEDs, 1986. A TELMA acaba de ativar a central Tr\xF3pico-R."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 5101f93591f6d7213b3cd387707cea46, type: 3}
     duracao: 0
   - id: primeira
     texto: "Ela foi apontada como a primeira central de comuta\xE7\xE3o totalmente
       digitalizada do Brasil."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: f3c6a1fc267d6e6369ca650a461d2d2b, type: 3}
     duracao: 0
   - id: dica
     texto: "Toque no telefone que est\xE1 brilhando."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 6bd6722eff6bd3c74965841a146deddb, type: 3}
     duracao: 0
   - id: toque
     texto: "Ao tocar neste telefone, voc\xEA v\xEA como a central encaminhava uma
       liga\xE7\xE3o por sinais digitais."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 59825bea6e7a8eea1bc9fcbbd5322bf9, type: 3}
     duracao: 0
   - id: fim
     texto: "Liga\xE7\xE3o completa! Agora vamos ao c\xE9u de Alc\xE2ntara."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 1965d4469ae9655f1ac8f4617fc386d5, type: 3}
     duracao: 0

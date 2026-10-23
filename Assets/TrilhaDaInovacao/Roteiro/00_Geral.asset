@@ -19,5 +19,5 @@ MonoBehaviour:
   falas:
   - id: dica-andar
     texto: "Caminhe at\xE9 a marca que est\xE1 brilhando no ch\xE3o."
-    audio: {fileID: 0}
+    audio: {fileID: 8300000, guid: 42e595b5d7f6bcd148d1067c40e4b048, type: 3}
     duracao: 0

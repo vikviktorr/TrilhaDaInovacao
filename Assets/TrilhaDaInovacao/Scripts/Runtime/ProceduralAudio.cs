@@ -37,6 +37,7 @@ namespace TrilhaDaInovacao
                 "impressora" => Gerar(nome, 2f, t =>
                     0.15f * Seno(220f + 40f * Mathf.Sin(t * 6f * Mathf.PI), t)),
                 "whoosh" => Whoosh(nome),
+                "explosao" => Explosao(nome),
                 "sirene" => Gerar(nome, 2.4f, t =>
                     0.35f * Seno(600f + 300f * Mathf.Sin(t * Mathf.PI), t) * Envelope(t, 2.4f, 0.05f, 0.3f)),
                 _ => null
@@ -110,6 +111,33 @@ namespace TrilhaDaInovacao
             var final = new float[total - emenda];
             System.Array.Copy(dados, final, final.Length);
             clip.SetData(final, 0);
+            return clip;
+        }
+
+        /// <summary>
+        /// Estrondo distante: estalo inicial, ruído grave que vai se fechando e um
+        /// ronco de 38 Hz; pico baixo para não doer no fone do Quest.
+        /// </summary>
+        static AudioClip Explosao(string nome)
+        {
+            const float duracao = 4f;
+            var total = Mathf.CeilToInt(duracao * Taxa);
+            var dados = new float[total];
+            var rng = new System.Random(22);
+            var filtrado = 0f;
+
+            for (var i = 0; i < total; i++)
+            {
+                var t = i / (float)Taxa;
+                var corte = Mathf.Lerp(0.25f, 0.012f, Mathf.Clamp01(t / 1.2f));
+                filtrado += corte * ((float)(rng.NextDouble() * 2.0 - 1.0) - filtrado);
+                var envelope = Mathf.Min(1f, t / 0.01f) * Mathf.Exp(-t * 1.1f);
+                var ronco = 0.35f * Seno(38f, t) * Mathf.Exp(-t * 0.8f);
+                dados[i] = 0.75f * (filtrado * 3f + ronco) * envelope;
+            }
+
+            var clip = AudioClip.Create(nome, total, 1, Taxa, false);
+            clip.SetData(dados, 0);
             return clip;
         }
 

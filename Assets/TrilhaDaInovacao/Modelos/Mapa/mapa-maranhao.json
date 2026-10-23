@@ -1,0 +1,48 @@
+{
+ "proporcao": 0.7526,
+ "fonte": "IBGE, malha de mesorregiões (API v3)",
+ "pontos": [
+  {
+   "nome": "OESTE\nMARANHENSE",
+   "tipo": "regiao",
+   "u": 0.3366,
+   "v": 0.6852
+  },
+  {
+   "nome": "LESTE\nMARANHENSE",
+   "tipo": "regiao",
+   "u": 0.7367,
+   "v": 0.5644
+  },
+  {
+   "nome": "NORTE\nMARANHENSE",
+   "tipo": "regiao",
+   "u": 0.547,
+   "v": 0.7828
+  },
+  {
+   "nome": "SUL\nMARANHENSE",
+   "tipo": "regiao",
+   "u": 0.3609,
+   "v": 0.2658
+  },
+  {
+   "nome": "CENTRO\nMARANHENSE",
+   "tipo": "regiao",
+   "u": 0.4941,
+   "v": 0.5218
+  },
+  {
+   "nome": "São Luís",
+   "tipo": "cidade",
+   "u": 0.6404,
+   "v": 0.8393
+  },
+  {
+   "nome": "Imperatriz",
+   "tipo": "cidade",
+   "u": 0.1819,
+   "v": 0.5146
+  }
+ ]
+}
