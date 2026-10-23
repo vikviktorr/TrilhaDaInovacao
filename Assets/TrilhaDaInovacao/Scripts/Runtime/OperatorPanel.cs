@@ -49,7 +49,8 @@ namespace TrilhaDaInovacao
         void Update()
         {
             var teclado = Keyboard.current;
-            if (teclado != null)
+            // No -qa as teclas ficam desligadas: um N ou R sem querer estragaria o relatório.
+            if (teclado != null && !diretor.QA)
             {
                 if (teclado.nKey.wasPressedThisFrame) diretor.Pular();
                 if (teclado.rKey.wasPressedThisFrame) diretor.Reiniciar();

@@ -109,6 +109,13 @@ namespace TrilhaDaInovacao
             pontas.Clear();
             MaosVisiveis = false;
 
+            // Óculos fora ou menu do sistema aberto: mãos escondidas e sem toque (VRC.Quest.Input.4).
+            if (PausaVisita.Pausada)
+            {
+                EsconderTudo();
+                return;
+            }
+
             if (PontoSimulado.HasValue) pontas.Add(PontoSimulado.Value);
 
             if (!Ativo || !XRStartup.XRAtivo)

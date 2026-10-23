@@ -34,6 +34,6 @@ MonoBehaviour:
     audio: {fileID: 8300000, guid: 31e0ddbce4a938db8a432d140e0cfeb4, type: 3}
     duracao: 0
   - id: siga
-    texto: "Siga a luz no ch\xE3o at\xE9 a primeira marca."
+    texto: Um portal vai se abrir. Ele leva para 1986.
     audio: {fileID: 8300000, guid: 7cb2b253daf0aefa0864350b3d8af6cf, type: 3}
     duracao: 0

@@ -74,7 +74,7 @@ namespace TrilhaDaInovacao
             alvo.Tocado += marcar;
             alvo.Ativar();
             toqueEsperado = alvo;
-            var simulacao = ctx.QA ? StartCoroutine(SimularToque(alvo)) : null;
+            var simulacao = ctx.QA ? StartCoroutine(ctx.SimularToque(alvo)) : null;
 
             yield return EsperarCom(() => feito, dica);
 
@@ -83,33 +83,6 @@ namespace TrilhaDaInovacao
             alvo.Tocado -= marcar;
             alvo.Desativar();
             toqueEsperado = null;
-        }
-
-        /// <summary>
-        /// QA: um dedo virtual sai da altura do peito e vai até o alvo, como um
-        /// visitante faria. Testa a detecção do PokeTrigger, não um atalho.
-        /// </summary>
-        IEnumerator SimularToque(PokeTrigger alvo)
-        {
-            yield return Esperar(1.5f);
-            var cabeca = Camera.main.transform;
-            var inicio = cabeca.position + Vector3.down * 0.45f + Plano(cabeca.forward) * 0.2f;
-            var colisor = alvo.GetComponent<Collider>();
-            var fim = colisor.bounds.center;
-            ctx.Enquadrar(fim);
-            for (var t = 0f; t < 1.2f; t += Time.deltaTime)
-            {
-                HandPoints.PontoSimulado = Vector3.Lerp(inicio, fim, Mathf.SmoothStep(0f, 1f, t / 1.2f));
-                yield return null;
-            }
-
-            HandPoints.PontoSimulado = fim;
-        }
-
-        static Vector3 Plano(Vector3 v)
-        {
-            v.y = 0f;
-            return v.normalized;
         }
 
         protected IEnumerator EsperarProximidade(ProximityTrigger alvo, string dica)

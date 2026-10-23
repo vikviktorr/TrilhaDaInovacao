@@ -2,6 +2,7 @@
 
 Experiência em realidade virtual para o Meta Quest 2, com rastreamento de mãos, no estande do Sebraelab (São Luís).
 O visitante caminha de verdade por seis marcas no piso. Em cada marca o mundo muda de época e mostra um marco da tecnologia maranhense.
+Quem decide a hora de seguir é o visitante: depois de explorar a época, ele toca no botão **PRÓXIMO**, e um portal vertical se abre no caminho até a próxima marca. Atravessar o portal leva à época seguinte.
 
 **Fofucho's Games Group**: Pedro Victor Santos Velôso, Davi Chaves de Oliveira, Gabriel Araujo Meneses,
 Kauã Carneiro de Morais, Lucas Gomes Antunes e Kalil Ramos Caldeira.
@@ -24,6 +25,13 @@ O projeto da P1 (feira com estandes) continua no histórico do git, na tag `p1-f
 | 7 | 6 | — | Encerramento | Retirar o óculos |
 
 Todo gatilho tem plano B: o guia repete a instrução em 6 s e a cena avança sozinha em 10 s.
+
+### Passagem entre as épocas
+
+Terminada a narração, a época fica livre para explorar. Atrás do visitante há uma ficha **Na vida real**, com o que a pesquisa mostrou sobre o lugar (fontes: CPqD/FAPESP, NASA/INPE, RNP, Anatel).
+O pedestal **PRÓXIMO** fica ao alcance da mão, do lado de dentro do U. Ao tocá-lo, o portal abre no meio do caminho até a próxima marca, com o ano e o nome do destino em cima.
+A troca de cena acontece quando a cabeça atravessa o vão do portal, o mesmo passo que o visitante daria na sala.
+Plano B: o guia lembra do botão depois de 30 s, e o portal abre sozinho em 90 s (`VisitDirector.tempoLembrarProximo` e `tempoAbrirPortal`). O último portal, depois de Alcântara, leva de volta ao Sebraelab, junto da saída.
 
 ## Mapa físico
 
@@ -107,7 +115,7 @@ No editor: menu **Trilha da Inovação → 0 · Configurar tudo** e depois os it
 | Quem | Ação | Comando |
 | --- | --- | --- |
 | Visitante (Quest) | Tocar | Encostar a ponta do indicador (ou o controle) |
-| Visitante (Quest) | Andar | Caminhar de verdade até a marca que brilha |
+| Visitante (Quest) | Seguir viagem | Tocar **PRÓXIMO** e atravessar o portal, a pé |
 | Monitor | Calibrar o piso | De pé na marca INÍCIO, olhando para dentro do U: segurar **A** por 2 s (ou **C** no teclado). Fica salvo |
 | Monitor | Pular cena | Segurar **B** por 1 s (ou **N**) |
 | Monitor | Reiniciar visita | Segurar **Y** por 3 s (ou **R**) |
@@ -121,6 +129,13 @@ O jogo abre em VR quando acha um runtime OpenXR (Quest Link, SteamVR, ALVR, Mona
   No Quest: `/sdcard/Android/data/com.fofuchosgames.trilhadainovacao/files/`. No Linux: `~/.config/unity3d/Fofucho's Games Group/Trilha da Inovação/`.
 - `TrilhaDaInovacao.x86_64 -tour <pasta>` percorre a visita sozinho e salva screenshots dos momentos-chave.
 - `TrilhaDaInovacao.x86_64 -qa <pasta>` faz o mesmo e grava `relatorio-qa.md`: tempo de cada cena contra o roteiro, FPS, draw calls, triângulos e luzes (orçamento do Quest 2), ergonomia (alvos de toque, legendas de até 2 linhas, corredor livre) e erros do log.
+  Também testa a pausa ao tirar o óculos (cena de 1986), o botão PRÓXIMO com o dedo simulado e a travessia de cada portal.
+- `-qa <pasta> -visitas N` repete a visita N vezes no mesmo processo (teste de longa duração; 10 visitas ≈ 45 min) e compara memória, FPS e estado térmico entre as visitas. Na 2ª visita, testa o óculos largado: a visita tem de recomeçar na abertura.
+- `Ferramentas/qa-quest.sh [N]` roda a mesma QA no Quest pelo cabo USB (o óculos pode ficar na mesa) e baixa o relatório para `Builds/QA-Quest/`, com FPS real, tempo de GPU, quadros perdidos e estado térmico do aparelho.
+
+## Pausa e próximo visitante
+
+Ao tirar o óculos ou abrir o menu do sistema, a visita pausa (tempo, áudio e mãos). Se o óculos voltar em até 45 s, a visita continua; depois disso, recomeça do início para o próximo visitante (`PausaVisita.limiteAusencia`).
 
 ## Pendências (do documento)
 
@@ -129,5 +144,5 @@ O jogo abre em VR quando acha um runtime OpenXR (Quest Link, SteamVR, ALVR, Mona
 - [ ] Valores e fonte da comparação 3G/4G/5G (hoje o painel é ilustrativo)
 - [ ] Gravar as falas do guia e definir o nome e o visual dele
 - [ ] Modelos de referência: central Trópico-R e foguetes HANBIT (Sketchfab/TurboSquid/Fab ou modelagem própria)
-- [ ] Bake de iluminação e medição a 72 Hz no OVR Metrics Tool
+- [ ] Bake de iluminação e medição a 72 Hz no Quest (`Ferramentas/qa-quest.sh`)
 - [ ] Testar com visitantes que nunca usaram VR

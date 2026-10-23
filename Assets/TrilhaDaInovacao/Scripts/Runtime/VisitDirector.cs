@@ -9,8 +9,8 @@ namespace TrilhaDaInovacao
 {
     /// <summary>
     /// Máquina de estados da visita (seção "Roteiro cena a cena"):
-    /// abertura no hub → caminhar até a marca i → transição com o ano → cena
-    /// da época → ... → encerramento → reinício para o próximo visitante.
+    /// abertura no hub → botão PRÓXIMO → portal até a marca i → transição com o
+    /// ano → cena da época → ... → encerramento → reinício para o próximo visitante.
     /// Cada época é uma cena carregada de forma aditiva sobre o Bootstrap.
     /// </summary>
     public class VisitDirector : MonoBehaviour
@@ -25,6 +25,7 @@ namespace TrilhaDaInovacao
         [SerializeField] DesktopRig desktop;
         [SerializeField] OperatorPanel operador;
         [SerializeField] AudioSource efeitos;
+        [SerializeField] PortalEpoca portal;
         [SerializeField, Tooltip("Falas comuns a todas as cenas (dica de caminhar).")]
         SceneScript roteiroGeral;
 
@@ -35,6 +36,10 @@ namespace TrilhaDaInovacao
         float tempoAuto = 10f;
         [SerializeField, Tooltip("Segundos parado fora da marca até o guia lembrar de caminhar.")]
         float tempoLembrarCaminhada = 15f;
+        [SerializeField, Tooltip("Segundos explorando a cena até o guia lembrar do botão Próximo.")]
+        float tempoLembrarProximo = 30f;
+        [SerializeField, Tooltip("Segundos sem tocar em Próximo até o portal abrir sozinho.")]
+        float tempoAbrirPortal = 90f;
         [SerializeField, Tooltip("Espera no fim antes de recomeçar sozinho para o próximo visitante.")]
         float esperaReinicio = 12f;
         [SerializeField, Range(0f, 1f), Tooltip("Volume dos efeitos e ambientes enquanto alguém fala.")]
@@ -53,6 +58,9 @@ namespace TrilhaDaInovacao
         string pastaTour;
         int capturas;
         QARelatorio relatorio;
+        PausaVisita pausa;
+        int visitasQA = 1;
+        int visitasFeitas;
 
         public GuideCharacter Guia => guia;
         public SubtitleController Legenda => legenda;
@@ -87,7 +95,14 @@ namespace TrilhaDaInovacao
                 Directory.CreateDirectory(pastaTour);
             }
 
-            if (qa) relatorio = gameObject.AddComponent<QARelatorio>();
+            pausa = gameObject.AddComponent<PausaVisita>();
+            if (qa)
+            {
+                relatorio = gameObject.AddComponent<QARelatorio>();
+                // -visitas N: teste de longa duração, N visitas seguidas no mesmo processo.
+                if (int.TryParse(XRStartup.ValorDoArgumento("-visitas"), out var n)) visitasQA = Mathf.Max(1, n);
+            }
+
             Abafar(efeitos);
 
             if (XRStartup.XRAtivo) operador.CarregarCalibracao();
@@ -125,9 +140,12 @@ namespace TrilhaDaInovacao
         {
             while (true)
             {
+                if (relatorio != null) relatorio.InicioVisita();
                 yield return RodarVisita();
+                if (relatorio != null) relatorio.FimVisita(true);
                 if (tour)
                 {
+                    if (qa && ++visitasFeitas < visitasQA) continue;
                     if (relatorio != null) Debug.Log($"[Trilha da Inovação] Relatório de QA: {relatorio.Escrever(pastaTour)}");
                     Debug.Log($"[Trilha da Inovação] Tour concluído: {capturas} capturas em {pastaTour}");
                     yield return new WaitForSeconds(0.5f);
@@ -151,8 +169,16 @@ namespace TrilhaDaInovacao
             StopAllCoroutines();
             PararCena();
             registro.EncerrarVisita(false);
+            if (relatorio != null)
+            {
+                relatorio.FimVisita(false);
+                visitasFeitas++;
+            }
+
             guia.Falando = false;
             legenda.Ocultar();
+            portal.Esconder();
+            HandPoints.PontoSimulado = null;
             visita = StartCoroutine(Laco());
         }
 
@@ -179,21 +205,30 @@ namespace TrilhaDaInovacao
             yield return fader.Abrir(1f);
             yield return Executar(0);
 
+            // Depois de cada cena o visitante explora à vontade e decide quando
+            // seguir: toca em PRÓXIMO e atravessa o portal até a marca seguinte.
+            // Na abertura o botão Começar já fez esse papel.
             for (var i = 1; i <= LayoutTrilha.TotalEpocas; i++)
             {
+                portal.Posicionar(LayoutTrilha.Marcas[i - 1], LayoutTrilha.Marcas[i], LayoutTrilha.Foco(i - 1),
+                    LayoutTrilha.Anos[i], LayoutTrilha.Titulos[i], LugarDoBotao());
                 marcas[i].Definir(EstadoMarca.Proxima);
-                MostrarTrilha(i);
-                yield return EsperarMarca(i);
+                yield return Passagem(i - 1, LayoutTrilha.Marcas[i], i > 1);
                 MostrarTrilha(-1);
                 marcas[i].Definir(EstadoMarca.Visitada);
 
                 yield return TrocarCena(i, LayoutTrilha.Anos[i]);
+                portal.Esconder();
                 yield return fader.Abrir();
                 yield return Executar(i);
             }
 
-            // Encerramento: volta ao hub, com o visitante ainda na marca 6.
+            // Encerramento: o último portal leva de volta ao hub, junto da saída.
+            portal.Posicionar(LayoutTrilha.Marcas[LayoutTrilha.TotalEpocas], LayoutTrilha.Saida,
+                LayoutTrilha.Foco(LayoutTrilha.TotalEpocas), "", "De volta ao Sebraelab", LugarDoBotao());
+            yield return Passagem(LayoutTrilha.TotalEpocas, LayoutTrilha.Saida, true);
             yield return TrocarCena(LayoutTrilha.Inicio, null);
+            portal.Esconder();
             yield return fader.Abrir();
             yield return Executar(LayoutTrilha.TotalEpocas + 1);
             yield return fader.Fechar(Color.black, 1.5f);
@@ -203,12 +238,63 @@ namespace TrilhaDaInovacao
             for (var t = 0f; t < esperaReinicio && !pularSolicitado; t += Time.deltaTime) yield return null;
         }
 
-        IEnumerator EsperarMarca(int i)
+        /// <summary>
+        /// Botão PRÓXIMO (se <paramref name="comBotao"/>) e travessia do portal que
+        /// leva da marca <paramref name="origem"/> até <paramref name="destino"/>.
+        /// Plano B: o guia lembra do botão e, sem toque, o portal abre sozinho.
+        /// </summary>
+        IEnumerator Passagem(int origem, Vector3 destino, bool comBotao)
         {
+            if (comBotao)
+            {
+                var tocou = false;
+                Action marcar = () => tocou = true;
+                portal.Botao.Tocado += marcar;
+                portal.MostrarBotao();
+                if (tour)
+                {
+                    Enquadrar(portal.Botao.transform.position + Vector3.up * 0.1f);
+                    yield return null;
+                    Capturar($"proximo-{origem}");
+                }
+
+                if (origem == 1) StartCoroutine(Dizer(roteiroGeral.Obter("explorar")));
+                var simulacao = qa ? StartCoroutine(SimularToque(portal.Botao, 3f)) : null;
+
+                var t = 0f;
+                var lembrou = false;
+                while (!tocou && !pularSolicitado)
+                {
+                    t += Time.deltaTime;
+                    if (tour && !qa && t > 0.5f) portal.Botao.Tocar();
+                    if (!lembrou && t >= tempoLembrarProximo)
+                    {
+                        lembrou = true;
+                        StartCoroutine(Dizer(roteiroGeral.Obter("dica-proximo")));
+                    }
+
+                    if (t >= tempoAbrirPortal) break;
+                    yield return null;
+                }
+
+                if (simulacao != null) StopCoroutine(simulacao);
+                HandPoints.PontoSimulado = null;
+                portal.Botao.Tocado -= marcar;
+                var gatilho = tocou ? "proximo" : pularSolicitado ? "pulado" : "auto";
+                registro.Gatilho(gatilho);
+                if (relatorio != null) relatorio.Gatilho(tocou ? $"próximo ({t:0.0} s)" : gatilho);
+                if (ConsumirPulo()) yield break;
+            }
+
+            efeitos.PlayOneShot(ProceduralAudio.Obter("portal"), 0.7f);
+            yield return portal.Abrir();
+            Enquadrar(portal.Centro + Vector3.up * 1.1f);
+            Capturar($"portal-{origem}");
+            if (origem <= 1) StartCoroutine(Dizer(roteiroGeral.Obter("dica-portal")));
+
             var parado = 0f;
             var tourEspera = 0.6f;
-
-            while (!marcas[i].ContemCabeca(Cabeca.position))
+            while (!portal.Atravessou())
             {
                 if (ConsumirPulo())
                 {
@@ -216,28 +302,72 @@ namespace TrilhaDaInovacao
                     yield break;
                 }
 
-                // QA: o visitante simulado caminha de verdade até a marca.
+                // QA: o visitante simulado caminha de verdade, através do portal.
                 if (qa)
                 {
-                    yield return desktop.Caminhar(LayoutTrilha.Marcas[i], 0.7f);
-                    if (!marcas[i].ContemCabeca(Cabeca.position))
-                        relatorio.Problema($"A marca {i} não detectou a cabeça do visitante ao chegar.");
-                    desktop.Posicionar(LayoutTrilha.Marcas[i], LayoutTrilha.Foco(i));
-                    continue;
+                    yield return desktop.Caminhar(destino, 0.7f);
+                    if (!portal.Atravessou())
+                        relatorio.Problema($"O portal depois da marca {origem} não detectou a travessia do visitante.");
+                    desktop.Posicionar(destino, DirecaoDepois(destino));
+                    yield break;
                 }
 
                 if (tour && (tourEspera -= Time.deltaTime) <= 0f)
-                    desktop.Posicionar(LayoutTrilha.Marcas[i], LayoutTrilha.Foco(i));
+                    desktop.Posicionar(destino, DirecaoDepois(destino));
 
                 parado += Time.deltaTime;
-                if (parado >= tempoLembrarCaminhada && roteiroGeral != null)
+                if (parado >= tempoLembrarCaminhada)
                 {
                     parado = 0f;
-                    StartCoroutine(Dizer(roteiroGeral.Obter("dica-andar")));
+                    StartCoroutine(Dizer(roteiroGeral.Obter("dica-portal")));
                 }
 
                 yield return null;
             }
+        }
+
+        /// <summary>Lugar do botão PRÓXIMO reservado pela cena carregada (ou null).</summary>
+        LugarDoProximo LugarDoBotao()
+        {
+            var cena = SceneManager.GetSceneByName(cenaCarregada ?? string.Empty);
+            if (!cena.IsValid()) return null;
+            foreach (var raiz in cena.GetRootGameObjects())
+            {
+                var lugar = raiz.GetComponentInChildren<LugarDoProximo>(true);
+                if (lugar != null) return lugar;
+            }
+
+            return null;
+        }
+
+        /// <summary>Para onde olhar ao chegar: o foco da marca, ou da saída no fim.</summary>
+        static Vector3 DirecaoDepois(Vector3 ponto)
+        {
+            for (var i = 0; i < LayoutTrilha.Marcas.Length; i++)
+                if ((LayoutTrilha.Marcas[i] - ponto).sqrMagnitude < 0.01f) return LayoutTrilha.Foco(i);
+            return LayoutTrilha.Foco(LayoutTrilha.TotalEpocas);
+        }
+
+        /// <summary>
+        /// QA: um dedo virtual sai da altura do peito e vai até o alvo, como um
+        /// visitante faria. Testa a detecção do PokeTrigger, não um atalho.
+        /// </summary>
+        public IEnumerator SimularToque(PokeTrigger alvo, float espera = 1.5f)
+        {
+            yield return new WaitForSeconds(espera);
+            var cabeca = Cabeca;
+            var frente = cabeca.forward;
+            frente.y = 0f;
+            var inicio = cabeca.position + Vector3.down * 0.45f + frente.normalized * 0.2f;
+            var fim = alvo.GetComponent<Collider>().bounds.center;
+            Enquadrar(fim);
+            for (var t = 0f; t < 1.2f; t += Time.deltaTime)
+            {
+                HandPoints.PontoSimulado = Vector3.Lerp(inicio, fim, Mathf.SmoothStep(0f, 1f, t / 1.2f));
+                yield return null;
+            }
+
+            HandPoints.PontoSimulado = fim;
         }
 
         /// <summary>Fecha o véu, troca a cena aditiva e mostra o ano (o caller abre).</summary>
@@ -317,8 +447,16 @@ namespace TrilhaDaInovacao
             if (relatorio != null)
             {
                 relatorio.InicioCena(sequencia.name, epoca > LayoutTrilha.TotalEpocas ? LayoutTrilha.TotalEpocas : epoca, previsto, cenaAtiva, sequencia);
-                yield return Panorama(sequencia.name, epoca > LayoutTrilha.TotalEpocas ? LayoutTrilha.TotalEpocas : epoca);
+                // No óculos a câmera segue a cabeça: sem panorama.
+                if (!XRStartup.XRAtivo) yield return Panorama(sequencia.name, epoca > LayoutTrilha.TotalEpocas ? LayoutTrilha.TotalEpocas : epoca);
             }
+
+            // QA: a pausa ao tirar o óculos em toda visita (cena 1986) e, no teste
+            // longo, o óculos largado na 2ª visita (cena 1994). Rodam no relatório,
+            // que sobrevive ao Reiniciar.
+            if (relatorio != null && epoca == 1) relatorio.StartCoroutine(relatorio.TestarPausa(pausa, sequencia.name));
+            if (relatorio != null && epoca == 2 && visitasQA > 1 && visitasFeitas == 1)
+                relatorio.StartCoroutine(relatorio.TestarAbandono(pausa, sequencia.name));
 
             var terminou = false;
             sequenciaEmCurso = sequencia;
@@ -502,15 +640,16 @@ namespace TrilhaDaInovacao
         /// <summary>No tour automático, salva um screenshot com este nome.</summary>
         public void Capturar(string nome)
         {
-            if (!tour) return;
+            if (!tour || XRStartup.XRAtivo) return;
             capturas++;
             ScreenCapture.CaptureScreenshot(Path.Combine(pastaTour, $"{capturas:00}_{nome}.png"));
         }
 
 #if UNITY_EDITOR
         public void ConfigurarNoEditor(FloorMarker[] m, LineRenderer trilha, ScreenFader f, SubtitleController l,
-            GuideCharacter g, SessionLogger r, DesktopRig d, OperatorPanel o, AudioSource e, SceneScript geral)
+            GuideCharacter g, SessionLogger r, DesktopRig d, OperatorPanel o, AudioSource e, SceneScript geral, PortalEpoca p)
         {
+            portal = p;
             marcas = m;
             trilhaDeLuz = trilha;
             fader = f;

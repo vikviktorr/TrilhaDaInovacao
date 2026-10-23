@@ -31,6 +31,10 @@ namespace TrilhaDaInovacao
             brilhoLampada.Definir(true);
             ctx.Enquadrar(lampada.transform.position);
             yield return Dizer("juntos");
+            ctx.Enquadrar(estudante.transform.position + Vector3.up * 0.7f);
+            yield return null;
+            ctx.Capturar("2018-estudante");
+            yield return null;
             yield return DizerPor(estudante, "estudante");
 
             yield return EsperarToque(lampada, "dica");

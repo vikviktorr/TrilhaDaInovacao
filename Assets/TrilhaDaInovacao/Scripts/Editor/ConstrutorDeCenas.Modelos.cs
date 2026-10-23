@@ -107,6 +107,11 @@ namespace TrilhaDaInovacao.EditorTools
         /// </summary>
         static Figurante Personagem(string caminho, Transform pai, Vector3 posicaoLocal, float giroY, float altura,
             params string[] gestos)
+            => Personagem(caminho, pai, posicaoLocal, giroY, altura, null, gestos);
+
+        /// <param name="preparar">Ajuste no modelo antes de medir a altura (ex.: <see cref="PrepararMuletas"/>).</param>
+        static Figurante Personagem(string caminho, Transform pai, Vector3 posicaoLocal, float giroY, float altura,
+            System.Action<GameObject> preparar, params string[] gestos)
         {
             // Os clipes animam a própria raiz do personagem (escala e posição): a escala
             // e o giro ficam num objeto acima dela, que a animação não toca.
@@ -128,6 +133,7 @@ namespace TrilhaDaInovacao.EditorTools
                 return null;
             }
 
+            preparar?.Invoke(go);
             repouso.SampleAnimation(go, 0f);
             var b = BoundsAssados(go, suporte);
             var escala = altura / b.size.y;
@@ -143,18 +149,105 @@ namespace TrilhaDaInovacao.EditorTools
             return figurante;
         }
 
+        /// <summary>
+        /// Estudante com muletas canadenses (as do modelo Kenney, presas ao antebraço).
+        /// No modelo, braço + muleta passam de 1,4 m: em pé, a ponteira ficaria longe
+        /// do corpo, e o gesto "interact" a erguia como uma ferramenta. Aqui o braço
+        /// encurta 20% e a haste da muleta fica do tamanho certo para tocar o chão com
+        /// o braço a ~24° da vertical; <see cref="ApoioMuletas"/> mantém as ponteiras
+        /// apoiadas no chão durante a animação.
+        /// </summary>
+        static void PrepararMuletas(GameObject go, float chao)
+        {
+            var smr = go.GetComponentsInChildren<SkinnedMeshRenderer>()
+                .FirstOrDefault(r => r.sharedMesh != null && r.bones.Any(o => o != null && o.name == "arm-left"));
+            if (smr == null)
+            {
+                Debug.LogWarning("[Trilha da Inovação] Personagem sem os braços esperados para as muletas.");
+                return;
+            }
+
+            var ossos = smr.bones;
+            int Osso(string nome) => System.Array.FindIndex(ossos, o => o != null && o.name == nome);
+            var malha = Object.Instantiate(smr.sharedMesh);
+            malha.name = "estudante-muletas";
+            var vertices = malha.vertices;
+            var uv = malha.uv;
+            var pesos = malha.boneWeights;
+            var bind = malha.bindposes;
+
+            // Cima e chão no espaço da malha: dos pés (ossos das pernas) aos ombros.
+            var pernas = new[] { Osso("leg-left"), Osso("leg-right") };
+            var pes = Enumerable.Range(0, vertices.Length).Where(i => pernas.Contains(pesos[i].boneIndex0)).ToList();
+            var ombros = (bind[Osso("arm-left")].inverse.MultiplyPoint3x4(Vector3.zero) +
+                          bind[Osso("arm-right")].inverse.MultiplyPoint3x4(Vector3.zero)) * 0.5f;
+            var centroPes = pes.Aggregate(Vector3.zero, (soma, i) => soma + vertices[i]) / pes.Count;
+            var cima = (ombros - centroPes).normalized;
+            var piso = pes.Min(i => Vector3.Dot(vertices[i], cima));
+
+            // Partes da muleta: azul (punho e braçadeira) e cinza (haste) na paleta Kenney.
+            bool DaMuleta(Vector2 c) => Mathf.Abs(c.x - 0.72f) < 0.03f || Mathf.Abs(c.x - 0.47f) < 0.03f;
+
+            var pontas = new Vector3[2];
+            var lados = new[] { "arm-left", "arm-right" };
+            for (var l = 0; l < 2; l++)
+            {
+                var b = Osso(lados[l]);
+                var doBraco = Enumerable.Range(0, vertices.Length).Where(i => pesos[i].boneIndex0 == b && pesos[i].weight0 > 0.5f).ToList();
+                var local = doBraco.ToDictionary(i => i, i => bind[b].MultiplyPoint3x4(vertices[i]));
+                var eixo = local.Values.OrderByDescending(p => p.sqrMagnitude).First().normalized;
+                var fimMao = doBraco.Where(i => !DaMuleta(uv[i])).Max(i => Vector3.Dot(local[i], eixo));
+                var fimMuleta = local.Values.Max(p => Vector3.Dot(p, eixo));
+
+                // Altura do ombro em unidades do osso.
+                var escalaOsso = bind[b].MultiplyVector(cima).magnitude;
+                var alturaOmbro = (Vector3.Dot(bind[b].inverse.MultiplyPoint3x4(Vector3.zero), cima) - piso) * escalaOsso;
+                const float encurtar = 0.8f;
+                var alcance = alturaOmbro / Mathf.Cos(24f * Mathf.Deg2Rad);
+                var haste = Mathf.Clamp((alcance - fimMao * encurtar) / (fimMuleta - fimMao), 0.15f, 1f);
+
+                foreach (var i in doBraco)
+                {
+                    var p = local[i];
+                    var d = Vector3.Dot(p, eixo);
+                    var novo = d <= fimMao ? d * encurtar : fimMao * encurtar + (d - fimMao) * haste;
+                    vertices[i] = bind[b].inverse.MultiplyPoint3x4(p + eixo * (novo - d));
+                }
+
+                pontas[l] = eixo * (fimMao * encurtar + (fimMuleta - fimMao) * haste);
+            }
+
+            malha.vertices = vertices;
+            malha.RecalculateBounds();
+            var pasta = $"{PastaGerado}/Malhas";
+            System.IO.Directory.CreateDirectory(pasta);
+            var caminho = $"{pasta}/estudante-muletas.asset";
+            AssetDatabase.DeleteAsset(caminho);
+            AssetDatabase.CreateAsset(malha, caminho);
+            smr.sharedMesh = malha;
+
+            go.AddComponent<ApoioMuletas>().ConfigurarNoEditor(ossos[Osso("arm-left")], ossos[Osso("arm-right")],
+                ossos[Osso("torso")], pontas[0], pontas[1], chao);
+        }
+
         /// <summary>Bounds, no espaço do pai, das malhas com skin na pose atual.</summary>
         static Bounds BoundsAssados(GameObject go, Transform pai)
         {
             var b = new Bounds();
             var inicial = true;
+            // Com muletas, os braços (e as muletas presas a eles) ficam de fora: na
+            // pose de repouso a ponteira passa abaixo do pé e encolheria o personagem.
+            var semBracos = go.GetComponent<ApoioMuletas>() != null;
             foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>())
             {
                 var assada = new Mesh();
                 smr.BakeMesh(assada, false);
-                foreach (var v in assada.vertices)
+                var pesos = smr.sharedMesh.boneWeights;
+                var vertices = assada.vertices;
+                for (var i = 0; i < vertices.Length; i++)
                 {
-                    var p = pai.InverseTransformPoint(smr.transform.TransformPoint(v));
+                    if (semBracos && i < pesos.Length && smr.bones[pesos[i].boneIndex0].name.StartsWith("arm")) continue;
+                    var p = pai.InverseTransformPoint(smr.transform.TransformPoint(vertices[i]));
                     if (inicial) { b = new Bounds(p, Vector3.zero); inicial = false; }
                     else b.Encapsulate(p);
                 }
@@ -713,16 +806,17 @@ namespace TrilhaDaInovacao.EditorTools
             const string f = "Kenney/furniture-kit/";
             Modelo(f + "chairDesk", q, new Vector3(-1.25f, 0f, 1.0f), 90f, 0.95f);
             Modelo(f + "chairDesk", q, new Vector3(1.25f, 0f, 1.0f), -90f, 0.95f);
+            // Estações do NOC, viradas para o telão da parede esquerda.
             for (var i = 0; i < 2; i++)
             {
-                var x = -1.8f + i * 1.3f;
-                Modelo(f + "desk", q, new Vector3(x, 0f, 3.35f), 180f, 1.2f, Medida.Largura);
-                Modelo(f + "computerScreen", q, new Vector3(x, 0.75f, 3.45f), 180f, 0.45f, Medida.Largura);
-                Modelo(f + "computerKeyboard", q, new Vector3(x, 0.75f, 3.2f), 180f, 0.4f, Medida.Largura);
-                Modelo(f + "chairDesk", q, new Vector3(x, 0f, 2.8f), 0f, 0.95f);
+                var z = 0.45f + i * 1.4f;
+                Modelo(f + "desk", q, new Vector3(-4.3f, 0f, z), -90f, 1.2f, Medida.Largura);
+                Modelo(f + "computerScreen", q, new Vector3(-4.4f, 0.75f, z), -90f, 0.45f, Medida.Largura);
+                Modelo(f + "computerKeyboard", q, new Vector3(-4.15f, 0.75f, z), -90f, 0.4f, Medida.Largura);
+                Modelo(f + "chairDesk", q, new Vector3(-3.7f, 0f, z), -90f, 0.95f);
             }
 
-            Modelo(f + "bookcaseClosedWide", q, new Vector3(-2.64f, 0f, 1.5f), 90f, 1.9f);
+            Modelo(f + "bookcaseClosedWide", q, new Vector3(4.65f, 0f, 0.6f), -90f, 1.9f);
             Modelo(f + "pottedPlant", q, new Vector3(2.6f, 0f, -0.9f), 0f, 1f);
             Modelo("Kenney/space-kit/machine_wireless", q, new Vector3(2.4f, 0f, 2f), -90f, 1.3f);
         }
@@ -737,25 +831,38 @@ namespace TrilhaDaInovacao.EditorTools
             // Pessoas com uma tarefa cada, longe dos móveis: colando post-its na parede
             // de ideias, operando a cortadora a laser (de lado para o visitante) e
             // conferindo o notebook, que comenta com o visitante de vez em quando.
-            var postIts = Personagem(c + "character-female-a", q, new Vector3(-1.85f, 0f, 3.0f), 15f, 1.62f,
-                "interact-right", "interact-left");
-            postIts.intervalo = new Vector2(1.5f, 4f);
-            postIts.repeticoes = new Vector2Int(1, 2);
-            var laser = Personagem(c + "character-male-b", q, new Vector3(0.7f, 0f, 2.5f), 90f, 1.72f, "interact-right", "interact-left");
+            // A estudante usa muletas: fica apoiada nelas e só acena com a cabeça.
+            var posPostIts = new Vector3(-2.1f, 0f, 2.9f);
+            var postIts = Personagem(c + "character-female-a", q, posPostIts, 165f, 1.62f,
+                go => PrepararMuletas(go, q.TransformPoint(posPostIts).y), "emote-yes");
+            postIts.intervalo = new Vector2(4f, 9f);
+            var laser = Personagem(c + "character-male-b", q, new Vector3(2.85f, 0f, 3.3f), 90f, 1.72f, "interact-right", "interact-left");
             laser.intervalo = new Vector2(2f, 5f);
-            var notebook = Personagem(c + "character-female-c", q, new Vector3(-1.65f, 0f, 1.85f), -150f, 1.6f, "emote-yes", "emote-no");
+            var notebook = Personagem(c + "character-female-c", q, new Vector3(-3.2f, 0f, 1.5f), -150f, 1.6f, "emote-yes", "emote-no");
             DarVoz(postIts, "Estudante");
             DarVoz(laser, "Pesquisador");
             DarVoz(notebook, "Empreendedora");
 
-            Modelo(f + "desk", q, new Vector3(-2.3f, 0f, 0.3f), 90f, 1.2f, Medida.Profundidade);
-            Modelo(f + "laptop", q, new Vector3(-2.3f, 0.76f, 0.3f), 90f, 0.32f, Medida.Largura);
-            Modelo(f + "chairDesk", q, new Vector3(-1.75f, 0f, 0.3f), -90f, 0.95f);
+            Modelo(f + "desk", q, new Vector3(-3.9f, 0f, 0.7f), 90f, 1.2f, Medida.Profundidade);
+            Modelo(f + "laptop", q, new Vector3(-3.9f, 0.76f, 0.7f), 90f, 0.32f, Medida.Largura);
+            Modelo(f + "chairDesk", q, new Vector3(-3.35f, 0f, 0.7f), -90f, 0.95f);
             Modelo(f + "chairDesk", q, new Vector3(1.45f, 0f, 1.45f), 200f, 0.95f);   // entre o guia, o operador da cortadora e a bancada do robô
-            Modelo(f + "bookcaseOpen", q, new Vector3(0.2f, 0f, 3.68f), 180f, 1.8f);
-            Modelo(f + "pottedPlant", q, new Vector3(2.6f, 0f, -0.5f), 0f, 1f);
-            Modelo(f + "cardboardBoxClosed", q, new Vector3(2.7f, 0f, 3.4f), 20f, 0.45f);
-            Modelo(f + "cardboardBoxOpen", q, new Vector3(2.0f, 0f, 3.55f), -15f, 0.4f);
+            Modelo(f + "bookcaseOpen", q, new Vector3(-5.2f, 0f, 5.6f), 90f, 1.8f);
+            Modelo(f + "pottedPlant", q, new Vector3(5.9f, 0f, -2f), 0f, 1f);
+            Modelo(f + "cardboardBoxClosed", q, new Vector3(5.7f, 0f, 6.9f), 20f, 0.45f);
+            Modelo(f + "cardboardBoxOpen", q, new Vector3(5.0f, 0f, 7.0f), -15f, 0.4f);
+
+            // Ilhas de trabalho ao fundo do salão, com notebooks e banquetas.
+            var madeira = Opaco("2018Bancada", new Color(0.6f, 0.42f, 0.25f));
+            foreach (var x in new[] { -1.4f, 1.6f })
+            {
+                Bloco("Ilha de trabalho", q, new Vector3(x, 0.88f, 5.9f), new Vector3(2f, 0.05f, 0.9f), madeira);
+                foreach (var dx in new[] { -0.9f, 0.9f })
+                    Bloco("Pé da ilha", q, new Vector3(x + dx, 0.43f, 5.9f), new Vector3(0.06f, 0.86f, 0.8f), madeira);
+                Modelo(f + "laptop", q, new Vector3(x - 0.4f, 0.905f, 5.85f), 180f, 0.32f, Medida.Largura);
+                Modelo(f + "laptop", q, new Vector3(x + 0.5f, 0.905f, 5.95f), 160f, 0.32f, Medida.Largura);
+                Modelo(f + "chairDesk", q, new Vector3(x - 0.4f, 0f, 5.2f), 0f, 0.95f);
+            }
 
             // Bancada secundária com braço robótico.
             Bloco("Bancada do robô", q, new Vector3(2.4f, 0.4f, 1.2f), new Vector3(0.7f, 0.8f, 1.2f), Opaco("2018Bancada", Color.white));

@@ -21,3 +21,15 @@ MonoBehaviour:
     texto: "Caminhe at\xE9 a marca que est\xE1 brilhando no ch\xE3o."
     audio: {fileID: 8300000, guid: 42e595b5d7f6bcd148d1067c40e4b048, type: 3}
     duracao: 0
+  - id: explorar
+    texto: "Olhe tudo com calma. Quando quiser seguir, toque no bot\xE3o Pr\xF3ximo."
+    audio: {fileID: 8300000, guid: aa8964057e8079ba89c9bec192b6a20c, type: 3}
+    duracao: 0
+  - id: dica-proximo
+    texto: "Quando quiser seguir viagem, toque no bot\xE3o Pr\xF3ximo."
+    audio: {fileID: 8300000, guid: b3ec634a5f81de39782795c75c1c3124, type: 3}
+    duracao: 0
+  - id: dica-portal
+    texto: Atravesse o portal para viajar no tempo.
+    audio: {fileID: 8300000, guid: 7ab6517a66e1f1fcca3444dc1c0c278a, type: 3}
+    duracao: 0

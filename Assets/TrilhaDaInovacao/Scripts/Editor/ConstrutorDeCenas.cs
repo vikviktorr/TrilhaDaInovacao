@@ -100,6 +100,7 @@ namespace TrilhaDaInovacao.EditorTools
                 new Color(0.35f, 0.85f, 1f), false);
             trilha.enabled = false;
             MontarPerimetroDeSeguranca();
+            var portal = MontarPortal();
 
             // Mãos e modo desktop ficam no rig.
             var maos = rig.AddComponent<HandPoints>();
@@ -118,7 +119,7 @@ namespace TrilhaDaInovacao.EditorTools
             var operador = visita.AddComponent<OperatorPanel>();
             operador.ConfigurarNoEditor(diretor, rig.GetComponent<XROrigin>());
             diretor.ConfigurarNoEditor(marcas, trilha, fader, legenda, guia, registro, desktop, operador, efeitos,
-                roteiros[Roteiro.Geral]);
+                roteiros[Roteiro.Geral], portal);
 
             var sala = new GameObject("Área livre do Sebraelab (room-scale)").AddComponent<AreaRoomScale>();
             sala.ConfigurarNoEditor(LayoutTrilha.LarguraSala, LayoutTrilha.ProfundidadeSala);
@@ -198,6 +199,66 @@ namespace TrilhaDaInovacao.EditorTools
             var guia = raiz.AddComponent<GuideCharacter>();
             guia.ConfigurarNoEditor(corpo, cabeca.transform, peito.GetComponent<Renderer>());
             return guia;
+        }
+
+        /// <summary>
+        /// Botão PRÓXIMO e portal entre as épocas. Ficam no Bootstrap e o diretor
+        /// os leva para a marca da vez; tudo sem luz (brilho próprio), para ler
+        /// igual na central de 1986 e na noite de Alcântara.
+        /// </summary>
+        static PortalEpoca MontarPortal()
+        {
+            const float meiaLargura = 0.5f, meiaAltura = 1.0f;
+            var raiz = new GameObject("Portal de época");
+            var botao = BotaoDeToque("Botão Próximo", raiz.transform, Vector3.zero, Quaternion.identity, "PRÓXIMO",
+                new Color(0.15f, 0.55f, 1f));
+            var pedestal = botao.transform.parent;
+
+            var portal = new GameObject("Portal").transform;
+            portal.SetParent(raiz.transform, false);
+            var abertura = new GameObject("Abertura").transform;
+            abertura.SetParent(portal, false);
+            abertura.localPosition = new Vector3(0f, meiaAltura + 0.08f, 0f);
+
+            // Vão oval: moldura de luz, véu brilhante e um anel interno mais fraco.
+            var ciano = new Color(0.35f, 0.85f, 1f);
+            var oval = new Vector3[40];
+            for (var i = 0; i < oval.Length; i++)
+            {
+                var a = i / (float)oval.Length * Mathf.PI * 2f;
+                oval[i] = new Vector3(Mathf.Cos(a) * meiaLargura, Mathf.Sin(a) * meiaAltura, 0f);
+            }
+
+            var moldura = Linha("Moldura", abertura, oval, 0.07f, ciano * 1.4f, true);
+            moldura.loop = true;
+            var interno = new Vector3[oval.Length];
+            for (var i = 0; i < oval.Length; i++) interno[i] = oval[i] * 0.86f;
+            var anel = Linha("Anel interno", abertura, interno, 0.025f, new Color(0.7f, 0.5f, 1f), true);
+            anel.loop = true;
+
+            var escalaVeu = new GameObject("Forma do véu").transform;
+            escalaVeu.SetParent(abertura, false);
+            escalaVeu.localScale = new Vector3(meiaLargura * 2.2f, meiaAltura * 2.2f, 1f);
+            var veu = Bloco("Véu", escalaVeu, Vector3.zero, Vector3.one, Particula("PortalVeu", true, new Color(0.35f, 0.7f, 1f, 0.8f)),
+                PrimitiveType.Quad);
+            veu.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+
+            // Faíscas que sobem pela borda do vão.
+            var faiscas = Particulas("Faíscas", abertura, Vector3.zero, Particula("PortalFaisca", true), 1.4f, 0.25f, 0.05f, 30f,
+                new Color(0.6f, 0.9f, 1f), 0f, false, -0.05f, 80);
+            var forma = faiscas.shape;
+            forma.shapeType = ParticleSystemShapeType.Circle;
+            forma.radius = 1f;
+            forma.radiusThickness = 0f;
+            forma.scale = new Vector3(meiaLargura, meiaAltura, 1f);
+            forma.rotation = Vector3.zero;
+
+            var destino = Texto("Destino", portal, new Vector3(0f, meiaAltura * 2f + 0.45f, 0f), "1994", 0.16f, 1.6f, Color.white);
+            destino.gameObject.AddComponent<EncararUsuario>();
+
+            var componente = raiz.AddComponent<PortalEpoca>();
+            componente.ConfigurarNoEditor(pedestal, botao, portal, abertura, veu.transform, faiscas, destino, meiaLargura);
+            return componente;
         }
 
         static FloorMarker[] MontarMarcas()

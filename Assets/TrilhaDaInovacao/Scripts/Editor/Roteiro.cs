@@ -30,7 +30,8 @@ namespace TrilhaDaInovacao.EditorTools
             ("resultado",
                 "O lançamento aconteceu, mas uma anomalia levou à perda da missão. O PION-BR2 não chegou à órbita.",
                 "O lançamento aconteceu, mas uma anomalia levou à perda da missão."),
-            ("contagem", "Five, four, three, two, one", "Cinco, quatro, três, dois, um")
+            ("contagem", "Five, four, three, two, one", "Cinco, quatro, três, dois, um"),
+            ("siga", "Siga a luz no chão até a primeira marca.", "Um portal vai se abrir. Ele leva para 1986.")
         };
 
         public static Dictionary<string, SceneScript> CriarOuAtualizar()
@@ -40,7 +41,10 @@ namespace TrilhaDaInovacao.EditorTools
             {
                 [Geral] = Garantir(Geral, "Geral", "", 0f, "", new[]
                 {
-                    ("dica-andar", "Caminhe até a marca que está brilhando no chão.")
+                    ("dica-andar", "Caminhe até a marca que está brilhando no chão."),
+                    ("explorar", "Olhe tudo com calma. Quando quiser seguir, toque no botão Próximo."),
+                    ("dica-proximo", "Quando quiser seguir viagem, toque no botão Próximo."),
+                    ("dica-portal", "Atravesse o portal para viajar no tempo.")
                 }),
 
                 [Nomes[0]] = Garantir(Nomes[0], "Abertura", "", 25f,

@@ -37,6 +37,14 @@ namespace TrilhaDaInovacao
                 "impressora" => Gerar(nome, 2f, t =>
                     0.15f * Seno(220f + 40f * Mathf.Sin(t * 6f * Mathf.PI), t)),
                 "whoosh" => Whoosh(nome),
+                // Portal abrindo: acorde que sobe, com um tremolo cintilante.
+                "portal" => Gerar(nome, 1.8f, t =>
+                {
+                    var subida = 1f + 0.5f * Mathf.Clamp01(t / 0.9f);
+                    var brilho = 0.6f + 0.4f * Mathf.Sin(2f * Mathf.PI * 9f * t);
+                    return 0.16f * brilho * (Seno(220f * subida, t) + 0.8f * Seno(330f * subida, t) + 0.6f * Seno(440f * subida, t))
+                           * Envelope(t, 1.8f, 0.25f, 0.7f);
+                }),
                 "explosao" => Explosao(nome),
                 "sirene" => Gerar(nome, 2.4f, t =>
                     0.35f * Seno(600f + 300f * Mathf.Sin(t * Mathf.PI), t) * Envelope(t, 2.4f, 0.05f, 0.3f)),

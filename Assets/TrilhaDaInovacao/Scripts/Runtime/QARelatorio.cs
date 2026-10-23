@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -6,7 +8,9 @@ using System.Text;
 using TMPro;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
+using UnityEngine.XR;
 
 namespace TrilhaDaInovacao
 {
@@ -16,6 +20,10 @@ namespace TrilhaDaInovacao
     /// pedida no documento — alvos de toque grandes e alcançáveis, guia fora
     /// do caminho, legendas de até 2 linhas e nada no corredor até a próxima
     /// marca. Erros e avisos do log também entram no relatório.
+    /// No Quest (XR ativo) mede também o tempo de GPU, os quadros perdidos e o
+    /// estado térmico; com -visitas N repete a visita N vezes (teste de longa
+    /// duração) e compara memória, FPS e temperatura entre a primeira e a última.
+    /// Testa ainda a pausa ao tirar o óculos e o recomeço depois do abandono.
     /// </summary>
     public class QARelatorio : MonoBehaviour
     {
@@ -28,6 +36,7 @@ namespace TrilhaDaInovacao
         {
             public string nome;
             public int marca;
+            public int visita;
             public float previsto;
             public float inicio;
             public float duracao;
@@ -36,11 +45,34 @@ namespace TrilhaDaInovacao
             public readonly List<long> drawCalls = new List<long>();
             public readonly List<long> setPass = new List<long>();
             public readonly List<long> triangulosQuadro = new List<long>();
+            public readonly List<float> gpu = new List<float>();
+            public int perdidos;
             public readonly List<string> gatilhos = new List<string>();
             public readonly List<string> problemas = new List<string>();
         }
 
+        class Visita
+        {
+            public int numero;
+            public float inicio, duracao;
+            public bool completa;
+            public readonly List<float> quadros = new List<float>();
+            public int perdidos;
+            public float memoriaProcesso, memoriaUnity;
+            public int termico = -1;
+            public float bateria = -1f;
+        }
+
+        static readonly string[] NomesTermicos = { "normal", "leve", "moderado", "severo", "crítico", "emergência", "desligando" };
+
         public static QARelatorio Instancia { get; private set; }
+
+        readonly List<Visita> visitas = new List<Visita>();
+        readonly List<string> testes = new List<string>();
+        Visita visitaAtual;
+        XRDisplaySubsystem tela;
+        float atualizacao;
+        bool esperandoRecomeco;
 
         readonly List<Cena> cenas = new List<Cena>();
         readonly Dictionary<string, int> erros = new Dictionary<string, int>();
@@ -71,8 +103,34 @@ namespace TrilhaDaInovacao
 
         void Update()
         {
+            // A pausa simulada para o tempo do jogo: esses quadros não contam.
+            if (PausaVisita.Pausada) return;
+            if (XRStartup.XRAtivo && (tela == null || !tela.running))
+            {
+                var telas = new List<XRDisplaySubsystem>();
+                SubsystemManager.GetSubsystems(telas);
+                tela = telas.Find(t => t.running);
+                if (tela != null && tela.TryGetDisplayRefreshRate(out var hz)) atualizacao = hz;
+            }
+
+            var perdeu = 0;
+            float gpu = -1f;
+            if (tela != null)
+            {
+                if (tela.TryGetDroppedFrameCount(out var n)) perdeu = n;
+                if (tela.TryGetAppGPUTimeLastFrame(out var g)) gpu = g;
+            }
+
+            if (visitaAtual != null)
+            {
+                visitaAtual.quadros.Add(Time.unscaledDeltaTime);
+                visitaAtual.perdidos += perdeu;
+            }
+
             if (atual == null) return;
             atual.quadros.Add(Time.unscaledDeltaTime);
+            atual.perdidos += perdeu;
+            if (gpu > 0f) atual.gpu.Add(gpu);
             if (gravDrawCalls.Valid && gravDrawCalls.LastValue > 0) atual.drawCalls.Add(gravDrawCalls.LastValue);
             if (gravSetPass.Valid && gravSetPass.LastValue > 0) atual.setPass.Add(gravSetPass.LastValue);
             if (gravTriangulos.Valid && gravTriangulos.LastValue > 0) atual.triangulosQuadro.Add(gravTriangulos.LastValue);
@@ -101,9 +159,140 @@ namespace TrilhaDaInovacao
 
         public void Gatilho(string tipo) => atual?.gatilhos.Add(tipo);
 
+        // ------------------------------------------------------------------
+        // Visitas (teste de longa duração com -visitas N)
+        // ------------------------------------------------------------------
+        public void InicioVisita()
+        {
+            visitaAtual = new Visita { numero = visitas.Count + 1, inicio = Time.realtimeSinceStartup };
+            visitas.Add(visitaAtual);
+        }
+
+        public void FimVisita(bool completa)
+        {
+            if (visitaAtual == null) return;
+            if (atual != null)
+            {
+                // Visita interrompida no meio de uma cena.
+                atual.duracao = Time.time - atual.inicio;
+                atual = null;
+            }
+
+            visitaAtual.duracao = Time.realtimeSinceStartup - visitaAtual.inicio;
+            visitaAtual.completa = completa;
+            visitaAtual.memoriaProcesso = MemoriaProcessoMB();
+            visitaAtual.memoriaUnity = Profiler.GetTotalAllocatedMemoryLong() / (1024f * 1024f);
+            visitaAtual.termico = EstadoTermico();
+            visitaAtual.bateria = SystemInfo.batteryLevel;
+            visitaAtual = null;
+        }
+
+        static float MemoriaProcessoMB()
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            try
+            {
+                using var depuracao = new AndroidJavaClass("android.os.Debug");
+                return depuracao.CallStatic<long>("getPss") / 1024f;
+            }
+            catch (Exception)
+            {
+                return 0f;
+            }
+#else
+            using var processo = System.Diagnostics.Process.GetCurrentProcess();
+            return processo.WorkingSet64 / (1024f * 1024f);
+#endif
+        }
+
+        /// <summary>PowerManager.getCurrentThermalStatus (Android 10+); -1 fora do Quest.</summary>
+        static int EstadoTermico()
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            try
+            {
+                using var unity = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                using var atividade = unity.GetStatic<AndroidJavaObject>("currentActivity");
+                using var energia = atividade.Call<AndroidJavaObject>("getSystemService", "power");
+                return energia.Call<int>("getCurrentThermalStatus");
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+#else
+            return -1;
+#endif
+        }
+
+        // ------------------------------------------------------------------
+        // Testes de comportamento
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Finge que o visitante tirou o óculos por 2 s no meio da cena: o tempo
+        /// da cena e o áudio têm de parar, as mãos sumir, e tudo voltar depois.
+        /// </summary>
+        public IEnumerator TestarPausa(PausaVisita pausa, string cena)
+        {
+            yield return new WaitForSeconds(4f);
+            var antes = Time.time;
+            pausa.Simular(true);
+            yield return new WaitForSecondsRealtime(2f);
+            var parado = Time.time - antes < 0.1f;
+            var mudo = AudioListener.pause;
+            var semMaos = PausaVisita.Pausada;
+            pausa.Simular(false);
+            yield return null;
+            var voltou = Time.timeScale > 0.99f && !AudioListener.pause && !PausaVisita.Pausada;
+
+            if (parado && mudo && semMaos && voltou)
+            {
+                testes.Add($"✅ Pausa ao tirar o óculos ({cena}): cena, áudio e mãos pararam por 2 s e a visita continuou.");
+            }
+            else
+            {
+                var falhas = new List<string>();
+                if (!parado) falhas.Add($"a cena andou {Time.time - antes:0.0} s");
+                if (!mudo) falhas.Add("o áudio continuou");
+                if (!semMaos) falhas.Add("as mãos continuaram ativas");
+                if (!voltou) falhas.Add("a visita não voltou ao normal");
+                testes.Add($"❌ Pausa ao tirar o óculos ({cena}): {string.Join(", ", falhas)}.");
+                Problema($"Pausa ao tirar o óculos falhou: {string.Join(", ", falhas)}.");
+            }
+        }
+
+        /// <summary>
+        /// Finge que o visitante largou o óculos por mais que o limite: quando
+        /// alguém o recoloca, a visita tem de recomeçar na abertura.
+        /// </summary>
+        public IEnumerator TestarAbandono(PausaVisita pausa, string cena)
+        {
+            yield return new WaitForSeconds(3f);
+            var limite = pausa.limiteAusencia;
+            pausa.limiteAusencia = 3f;
+            esperandoRecomeco = true;
+            pausa.Simular(true);
+            yield return new WaitForSecondsRealtime(3.5f);
+            pausa.Simular(false);
+            pausa.limiteAusencia = limite;
+
+            yield return new WaitForSecondsRealtime(20f);
+            if (!esperandoRecomeco) yield break;
+            esperandoRecomeco = false;
+            testes.Add($"❌ Óculos largado em {cena}: a visita não recomeçou na abertura.");
+            problemasGerais.Add("Depois do óculos ficar fora além do limite, a visita não recomeçou.");
+        }
+
         public void InicioCena(string nome, int marca, float previsto, Scene cena, EraSequence sequencia)
         {
-            atual = new Cena { nome = nome, marca = marca, previsto = previsto, inicio = Time.time };
+            if (esperandoRecomeco && marca == 0)
+            {
+                esperandoRecomeco = false;
+                testes.Add("✅ Óculos largado por 3,5 s (limite de teste: 3 s): ao recolocar, a visita recomeçou na abertura.");
+            }
+
+            atual = new Cena { nome = nome, marca = marca, previsto = previsto, inicio = Time.time, visita = visitas.Count };
             cenas.Add(atual);
             Medir(cena);
             VerificarErgonomia(cena, sequencia);
@@ -271,19 +460,30 @@ namespace TrilhaDaInovacao
             var ci = CultureInfo.GetCultureInfo("pt-BR");
             var sb = new StringBuilder();
             var total = Time.time - inicioVisita;
-            var previsto = cenas.Sum(c => c.previsto);
+            // Tabela de cenas: a primeira visita completa (as outras aparecem em "Visitas").
+            var primeira = visitas.FirstOrDefault(v => v.completa);
+            var cenasTabela = primeira != null ? cenas.Where(c => c.visita == primeira.numero).ToList() : cenas;
+            var previsto = cenasTabela.Sum(c => c.previsto);
 
             sb.AppendLine("# Relatório de QA — Trilha da Inovação");
             sb.AppendLine();
             sb.AppendLine($"Gerado em {System.DateTime.Now.ToString("dd/MM/yyyy HH:mm", ci)} · Unity {Application.unityVersion} · " +
                           $"{SystemInfo.graphicsDeviceName} · {Screen.width}×{Screen.height}");
             sb.AppendLine();
-            sb.AppendLine($"Visita completa: **{Formatar(total)}** (meta do roteiro: 4:45; soma prevista das cenas: {Formatar(previsto)}).");
+            var aparelho = XRStartup.XRAtivo
+                ? $"{SystemInfo.deviceModel} · VR a {(atualizacao > 0 ? atualizacao : 72):0} Hz"
+                : $"{SystemInfo.deviceModel} · modo desktop (FPS do PC, não do Quest)";
+            sb.AppendLine($"Aparelho: {aparelho}");
+            sb.AppendLine();
+            var tempoVisita = primeira != null ? primeira.duracao : total;
+            sb.AppendLine($"Visita completa: **{Formatar(tempoVisita)}** (meta do roteiro: 4:45; soma prevista das cenas: {Formatar(previsto)}).");
             sb.AppendLine("O tempo inclui caminhadas simuladas a 0,7 m/s entre as marcas.");
             sb.AppendLine();
-            sb.AppendLine("| Cena | Previsto | Real | Gatilhos | FPS médio | Quadro p95 | Draw calls (méd/p95/máx) | SetPass máx | Triângulos/quadro máx | Renderers | Luzes |");
-            sb.AppendLine("| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |");
-            foreach (var c in cenas)
+            if (visitas.Count > 1) sb.AppendLine("Tabela da primeira visita; as seguintes estão em \"Visitas\".");
+            sb.AppendLine();
+            sb.AppendLine("| Cena | Previsto | Real | Gatilhos | FPS médio | Quadro p95 | GPU p95 | Quadros perdidos | Draw calls (méd/p95/máx) | SetPass máx | Triângulos/quadro máx | Renderers | Luzes |");
+            sb.AppendLine("| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |");
+            foreach (var c in cenasTabela)
             {
                 var ordenados = c.quadros.OrderBy(q => q).ToList();
                 var media = ordenados.Count > 0 ? ordenados.Average() : 0f;
@@ -294,8 +494,11 @@ namespace TrilhaDaInovacao
                 var dcP95Tab = dcP.Count > 0 ? dcP[(int)(dcP.Count * 0.95f)] : 0;
                 var spMax = c.setPass.Count > 0 ? c.setPass.Max() : 0;
                 var triMax = c.triangulosQuadro.Count > 0 ? c.triangulosQuadro.Max() : c.triangulos;
+                var gpuOrd = c.gpu.OrderBy(g => g).ToList();
+                var gpuTexto = gpuOrd.Count > 0 ? $"{gpuOrd[(int)(gpuOrd.Count * 0.95f)] * 1000f:0.0} ms" : "—";
+                var perdidosTexto = XRStartup.XRAtivo ? $"{c.perdidos}" : "—";
                 sb.AppendLine($"| {c.nome} | {c.previsto:0} s | {c.duracao:0.0} s | {string.Join(", ", c.gatilhos)} | " +
-                              $"{(media > 0 ? 1f / media : 0):0} | {p95 * 1000f:0.0} ms | {dcMedia:0}/{dcP95Tab}/{dcMax} | {spMax} | " +
+                              $"{(media > 0 ? 1f / media : 0):0} | {p95 * 1000f:0.0} ms | {gpuTexto} | {perdidosTexto} | {dcMedia:0}/{dcP95Tab}/{dcMax} | {spMax} | " +
                               $"{triMax.ToString("N0", ci)} | {c.renderers} | {c.luzes} |");
             }
 
@@ -303,6 +506,12 @@ namespace TrilhaDaInovacao
             sb.AppendLine("Draw calls e triângulos medidos pelo ProfilerRecorder neste PC (pipeline PC); no Quest, com multiview, a contagem de draw calls é semelhante.");
             sb.AppendLine($"Orçamento Quest 2 usado na checagem: ≤ {LimiteRenderers} draw calls, " +
                           $"≤ {LimiteTriangulos.ToString("N0", ci)} triângulos, {LimiteLuzesTempoReal} luz em tempo real (+ luzes pontuais pequenas).");
+            sb.AppendLine();
+            EscreverVisitas(sb, ci);
+            sb.AppendLine("## Testes de comportamento");
+            sb.AppendLine();
+            if (testes.Count == 0) sb.AppendLine("Nenhum teste rodou nesta execução.");
+            foreach (var t in testes) sb.AppendLine($"- {t}");
             sb.AppendLine();
             sb.AppendLine("## Problemas encontrados");
             sb.AppendLine();
@@ -313,6 +522,7 @@ namespace TrilhaDaInovacao
                 algum = true;
             }
 
+            var linhas = new List<string>();
             foreach (var c in cenas)
             {
                 // p95: um quadro isolado (aquecimento de shader ao abrir a cena) não reprova.
@@ -322,9 +532,21 @@ namespace TrilhaDaInovacao
                 var triPico = c.triangulosQuadro.Count > 0 ? c.triangulosQuadro.Max() : c.triangulos;
                 if (triPico > LimiteTriangulos) c.problemas.Add($"{triPico:N0} triângulos por quadro (limite {LimiteTriangulos:N0}).");
                 if (c.gatilhos.Contains("auto")) c.problemas.Add("A interação simulada não disparou o gatilho; a cena avançou pelo plano B.");
+                if (XRStartup.XRAtivo && c.quadros.Count > 0)
+                {
+                    // VRC.Quest.Performance.1: 72 FPS no óculos.
+                    var hz = atualizacao > 0 ? atualizacao : 72f;
+                    var q = c.quadros.OrderBy(x => x).ToList();
+                    var p95Quadro = q[(int)(q.Count * 0.95f)];
+                    if (p95Quadro > 1.1f / hz) c.problemas.Add($"5% dos quadros levam {p95Quadro * 1000f:0.0} ms: abaixo de {hz:0} FPS no óculos.");
+                    if (c.perdidos > c.quadros.Count / 100) c.problemas.Add($"{c.perdidos} quadros perdidos ({100f * c.perdidos / c.quadros.Count:0.0}% da cena).");
+                }
                 foreach (var p in c.problemas)
                 {
-                    sb.AppendLine($"- [ ] {c.nome}: {p}");
+                    var linha = $"- [ ] {c.nome}: {p}";
+                    if (linhas.Contains(linha)) continue;
+                    linhas.Add(linha);
+                    sb.AppendLine(linha);
                     algum = true;
                 }
             }
@@ -340,6 +562,46 @@ namespace TrilhaDaInovacao
             var caminho = Path.Combine(pasta, "relatorio-qa.md");
             File.WriteAllText(caminho, sb.ToString());
             return caminho;
+        }
+
+        /// <summary>Uma linha por visita e a comparação entre a primeira e a última.</summary>
+        void EscreverVisitas(StringBuilder sb, CultureInfo ci)
+        {
+            if (visitas.Count == 0) return;
+            sb.AppendLine("## Visitas");
+            sb.AppendLine();
+            sb.AppendLine("| # | Resultado | Duração | FPS médio | Quadros perdidos | Memória do processo | Memória Unity | Estado térmico | Bateria |");
+            sb.AppendLine("| ---: | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |");
+            foreach (var v in visitas)
+            {
+                var media = v.quadros.Count > 0 ? v.quadros.Average() : 0f;
+                sb.AppendLine($"| {v.numero} | {(v.completa ? "completa" : "interrompida")} | {Formatar(v.duracao)} | {(media > 0 ? 1f / media : 0):0} | " +
+                              $"{(XRStartup.XRAtivo ? v.perdidos.ToString() : "—")} | {v.memoriaProcesso.ToString("N0", ci)} MB | " +
+                              $"{v.memoriaUnity.ToString("N0", ci)} MB | {(v.termico >= 0 ? NomesTermicos[Mathf.Min(v.termico, 6)] : "—")} | " +
+                              $"{(v.bateria >= 0 ? $"{v.bateria * 100f:0}%" : "—")} |");
+            }
+
+            sb.AppendLine();
+            var completas = visitas.Where(v => v.completa).ToList();
+            if (completas.Count >= 2)
+            {
+                // A primeira visita inclui o aquecimento (shaders, cache); com 3+, compara a partir da segunda.
+                var baseVisita = completas.Count >= 3 ? completas[1] : completas[0];
+                var ultima = completas[completas.Count - 1];
+                var cresceu = ultima.memoriaProcesso - baseVisita.memoriaProcesso;
+                var fpsBase = 1f / Mathf.Max(0.0001f, baseVisita.quadros.Average());
+                var fpsUltima = 1f / Mathf.Max(0.0001f, ultima.quadros.Average());
+                sb.AppendLine($"Da visita {baseVisita.numero} à {ultima.numero}: memória do processo {(cresceu >= 0 ? "+" : "")}{cresceu:0} MB, " +
+                              $"FPS médio {fpsBase:0} → {fpsUltima:0}.");
+                sb.AppendLine();
+                if (cresceu > 40f && cresceu > baseVisita.memoriaProcesso * 0.1f)
+                    problemasGerais.Add($"A memória cresceu {cresceu:0} MB entre as visitas {baseVisita.numero} e {ultima.numero}: possível vazamento.");
+                if (fpsUltima < fpsBase * 0.9f)
+                    problemasGerais.Add($"O FPS médio caiu de {fpsBase:0} para {fpsUltima:0} ao longo das visitas (aquecimento ou vazamento).");
+            }
+
+            var quente = visitas.Where(v => v.termico >= 3).Select(v => v.numero).ToList();
+            if (quente.Count > 0) problemasGerais.Add($"Estado térmico severo ou pior nas visitas {string.Join(", ", quente)}: o Quest vai reduzir o desempenho.");
         }
 
         static string Formatar(float segundos) => $"{(int)(segundos / 60)}:{(int)(segundos % 60):00}";

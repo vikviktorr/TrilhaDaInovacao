@@ -71,7 +71,8 @@ namespace TrilhaDaInovacao.EditorTools
 
             Bloco("Calha de cabos", q, new Vector3(0f, 2.45f, 4.2f), new Vector3(4.8f, 0.08f, 0.3f), Opaco("1986Calha", new Color(0.3f, 0.3f, 0.3f)));
             Bloco("Placa", q, new Vector3(0f, 2.3f, 3.94f), new Vector3(2.4f, 0.26f, 0.02f), Opaco("1986Placa", new Color(0.08f, 0.15f, 0.35f)));
-            Texto("Texto da placa", q, new Vector3(0f, 2.3f, 3.925f), "TELMA · Central Trópico-R", 0.13f, 2.3f, Color.white);
+            Texto("Texto da placa", q, new Vector3(0f, 2.3f, 3.925f), "TELMA · Central Trópico-R\n<size=40%>Projeto CPqD/Telebrás · até 10 mil assinantes · funciona sem ventilação forçada</size>",
+                0.13f, 2.3f, Color.white);
 
             // Balcão com o telefone de origem.
             Bloco("Balcão", q, new Vector3(-0.1f, 0.44f, 0.78f), new Vector3(0.9f, 0.88f, 0.5f), Opaco("1986Madeira", new Color(0.45f, 0.3f, 0.18f)));
@@ -138,6 +139,7 @@ namespace TrilhaDaInovacao.EditorTools
             seq.somTelefoneDestino = somDestino;
             seq.ambiente = ambiente;
 
+            LugarDoProximo(q, new Vector3(-0.45f, 0.88f, 0.9f), true);   // no balcão, à esquerda do telefone (o rádio fica à direita)
             return Salvar(cena, LayoutTrilha.Cenas[1]);
         }
 
@@ -155,6 +157,87 @@ namespace TrilhaDaInovacao.EditorTools
             public string tipo;
             public float u;
             public float v;
+        }
+
+        /// <summary>
+        /// Ficha "Na vida real" num pedestal inclinado, atrás do visitante: o que a
+        /// pesquisa mostrou sobre o lugar e a época, para ler com calma antes de
+        /// tocar em Próximo. Estática (vira parte da malha mesclada da cena).
+        /// </summary>
+        /// <summary>Piso elevado, ar-condicionado de precisão, calhas de fibra e NOC da sala de 2009.</summary>
+        static void SalaDeEquipamentos2009(Transform q)
+        {
+            // Juntas das placas de 60 × 60 cm do piso elevado.
+            var junta = Opaco("2009Junta", new Color(0.14f, 0.15f, 0.18f));
+            for (var i = 0; i <= 16; i++)
+                Bloco($"Junta x {i}", q, new Vector3(-4.8f + i * 0.6f, 0.002f, 2f), new Vector3(0.015f, 0.004f, 9f), junta);
+            for (var i = 0; i <= 15; i++)
+                Bloco($"Junta z {i}", q, new Vector3(0f, 0.002f, -2.4f + i * 0.6f), new Vector3(10f, 0.004f, 0.015f), junta);
+            var perfurada = Opaco("2009Perfurada", new Color(0.18f, 0.2f, 0.24f));
+            for (var r = 0; r < 12; r++)
+                Bloco($"Placa perfurada {r}", q, new Vector3(-3.3f + r * 0.6f, 0.003f, 2.4f), new Vector3(0.56f, 0.004f, 0.56f), perfurada);
+
+            // Ar-condicionado de precisão nas pontas do corredor, e calhas de fibra no alto.
+            var crac = Opaco("2009Crac", new Color(0.78f, 0.8f, 0.82f));
+            foreach (var x in new[] { -4.4f, 4.4f })
+            {
+                Bloco("Ar-condicionado de precisão", q, new Vector3(x, 0.95f, 4.4f), new Vector3(0.9f, 1.9f, 0.9f), crac);
+                Bloco("Grade do ar", q, new Vector3(x - Mathf.Sign(x) * 0.455f, 1.3f, 4.4f), new Vector3(0.01f, 0.8f, 0.7f), junta);
+            }
+
+            var fibra = Opaco("2009Fibra", new Color(0.95f, 0.78f, 0.1f));
+            foreach (var z in new[] { 3.4f, 5.4f })
+            {
+                Bloco("Calha de fibra", q, new Vector3(0f, 2.55f, z), new Vector3(7.4f, 0.1f, 0.22f), fibra);
+                for (var r = 0; r < 4; r++)
+                    Bloco("Descida de fibra", q, new Vector3(-2.7f + r * 1.8f, 2.33f, z), new Vector3(0.12f, 0.35f, 0.12f), fibra);
+            }
+            Bloco("Calha de fibra (tronco)", q, new Vector3(0f, 2.55f, 4.4f), new Vector3(0.22f, 0.1f, 2f), fibra);
+
+            // NOC: telão e duas estações de monitoramento junto à parede esquerda.
+            var telao = Opaco("2009Telao", new Color(0.02f, 0.05f, 0.12f), new Color(0.05f, 0.18f, 0.4f));
+            var grafico = Opaco("2009Grafico", Color.black, new Color(0.2f, 0.9f, 0.5f));
+            for (var i = 0; i < 3; i++)
+            for (var j = 0; j < 2; j++)
+            {
+                var c = new Vector3(-4.93f, 1.45f + j * 0.62f, 0.2f + i * 1f);
+                Bloco($"Tela do telão {i}-{j}", q, c, new Vector3(0.02f, 0.58f, 0.97f), telao);
+                for (var k = 0; k < 5; k++)
+                {
+                    var altura = 0.08f + 0.05f * ((i * 7 + j * 3 + k * 5) % 6);
+                    Bloco("Barra do gráfico", q, c + new Vector3(0.012f, -0.22f + altura / 2f, -0.3f + k * 0.15f), new Vector3(0.005f, altura, 0.08f), grafico);
+                }
+            }
+        }
+
+        /// <summary>Ponto fixo e livre do cenário onde o botão PRÓXIMO aparece.</summary>
+        static void LugarDoProximo(Transform q, Vector3 posicao, bool montado)
+        {
+            var go = new GameObject("Lugar do botão Próximo");
+            go.transform.SetParent(q, false);
+            go.transform.localPosition = posicao;
+            go.AddComponent<LugarDoProximo>().montado = montado;
+        }
+
+        static void FichaReal(Transform q, Vector3 posicao, string titulo, string texto)
+        {
+            var raiz = new GameObject($"Na vida real · {titulo}").transform;
+            raiz.SetParent(q, false);
+            raiz.localPosition = posicao;
+            var frente = new Vector3(posicao.x, 0f, posicao.z);
+            raiz.localRotation = Quaternion.LookRotation(frente.normalized, Vector3.up);
+
+            var escuro = Opaco("FichaPainel", new Color(0.06f, 0.1f, 0.2f));
+            Bloco("Poste", raiz, new Vector3(0f, 0.5f, 0f), new Vector3(0.06f, 0.5f, 0.06f), escuro, PrimitiveType.Cylinder);
+            var tampo = new GameObject("Tampo").transform;
+            tampo.SetParent(raiz, false);
+            tampo.localPosition = new Vector3(0f, 1.12f, 0f);
+            tampo.localRotation = Quaternion.Euler(25f, 0f, 0f);
+            Bloco("Painel", tampo, new Vector3(0f, 0f, 0.015f), new Vector3(0.66f, 0.44f, 0.025f), escuro);
+            var corpo = Texto("Texto", tampo, Vector3.zero,
+                $"<size=70%><color=#7FD4FF>NA VIDA REAL</color></size>\n<b>{titulo}</b>\n<size=78%>{texto}</size>",
+                0.033f, 0.6f, Color.white);
+            corpo.rectTransform.sizeDelta = new Vector2(0.6f, 0.4f);
         }
 
         /// <summary>
@@ -304,15 +387,21 @@ namespace TrilhaDaInovacao.EditorTools
             ionosfera.SetActive(false);
             rotuloIonosfera.SetActive(false);
 
-            // Foguete de sondagem na rampa, ao longe, e a trajetória até a ionosfera.
+            // Foguete de sondagem Nike-Orion no lançador de trilho, ao longe, e a trajetória
+            // até a ionosfera (Ferramentas/blender/nike_orion.py). Na Campanha Guará, a NASA
+            // lançou de Alcântara Nike-Orion, Nike-Tomahawk e Black Brant (ago.–out. 1994).
             var rampa = new Vector3(-5f, 0f, 16f);
-            Bloco("Trilho de lançamento", q, rampa + new Vector3(0.35f, 3f, 0f), new Vector3(0.2f, 6f, 0.2f), metal, rotacao: new Vector3(-8f, 0f, 0f));
-            Bloco("Foguete de sondagem", q, rampa + new Vector3(0f, 2.8f, 0f), new Vector3(0.35f, 2.4f, 0.35f),
-                Opaco("FogueteBranco", new Color(0.95f, 0.95f, 0.95f)), PrimitiveType.Capsule, new Vector3(-8f, 0f, 0f));
+            if (Modelo("Guara/nike-orion-lancador", q, rampa, 180f, 11.8f) == null)
+            {
+                Bloco("Trilho de lançamento", q, rampa + new Vector3(0.35f, 3f, 0f), new Vector3(0.2f, 6f, 0.2f), metal, rotacao: new Vector3(-8f, 0f, 0f));
+                Bloco("Foguete de sondagem", q, rampa + new Vector3(0f, 2.8f, 0f), new Vector3(0.35f, 2.4f, 0.35f),
+                    Opaco("FogueteBranco", new Color(0.95f, 0.95f, 0.95f)), PrimitiveType.Capsule, new Vector3(-8f, 0f, 0f));
+            }
+
             var trajetoriaGo = new GameObject("Trajetória");
             trajetoriaGo.transform.SetParent(q, false);
             var pontos = new Vector3[32];
-            var inicio = rampa + new Vector3(0f, 5.2f, 0.7f);
+            var inicio = rampa + new Vector3(0f, 12f, 1.6f);
             var controle = new Vector3(-5f, 38f, 22f);
             var fim = new Vector3(-1f, 45f, 46f);
             for (var i = 0; i < pontos.Length; i++)
@@ -337,6 +426,10 @@ namespace TrilhaDaInovacao.EditorTools
 
             Bandeira(q, new Vector3(-2.25f, 0f, 2.35f), true);
             Bandeira(q, new Vector3(-1.45f, 0f, 2.35f), false);
+            FichaReal(q, new Vector3(-0.55f, 0f, -0.85f), "Campanha Guará · ago.–out. 1994",
+                "A NASA e o INPE lançaram de Alcântara foguetes Nike-Orion, Nike-Tomahawk e Black Brant; " +
+                "um Black Brant chegou a 956 km de altitude. Radares e ionossondas em terra, perto de São Luís, " +
+                "acompanharam a ionosfera sobre o equador magnético.");
 
             var ambiente = Fonte("Vento e mar", q, q.TransformPoint(new Vector3(0f, 2f, 3f)), false);
 
@@ -352,6 +445,7 @@ namespace TrilhaDaInovacao.EditorTools
             seq.ambiente = ambiente;
             seq.bipe = bipe;
 
+            LugarDoProximo(q, new Vector3(0.45f, 0f, -0.85f), false);   // atrás do visitante, ao lado da ficha
             return Salvar(cena, LayoutTrilha.Cenas[2]);
         }
 
@@ -396,9 +490,16 @@ namespace TrilhaDaInovacao.EditorTools
                 new Color(0.5f, 0.6f, 0.9f), 0.25f, new Vector3(70f, 0f, 0f));
 
             var q = Quadro(3, "Rede Metropolitana · 2009");
+            // Sala de equipamentos do ponto de presença (PoP) da RNP, como num data
+            // center: piso elevado de placas (com placas perfuradas no corredor frio,
+            // por onde sai o ar do ar-condicionado de precisão), fileiras de racks de
+            // 44U (2,1 m), calhas amarelas de fibra óptica no alto e a central de
+            // monitoramento (NOC) com o telão. 10 × 9 m, pé-direito de 3,2 m.
             var escuro = Opaco("2009Parede", new Color(0.07f, 0.09f, 0.13f));
-            SalaFechada(q, new Vector3(0f, 0f, 1f), new Vector3(6f, 2.8f, 5.5f), Opaco("2009Piso", new Color(0.1f, 0.12f, 0.16f), smooth: 0.5f), escuro, escuro);
+            SalaFechada(q, new Vector3(0f, 0f, 2f), new Vector3(10f, 3.2f, 9f), Opaco("2009Piso", new Color(0.3f, 0.32f, 0.36f), smooth: 0.5f), escuro, escuro);
             Luz("Luz da mesa", q, new Vector3(0f, 2.4f, 1f), LightType.Point, new Color(0.5f, 0.75f, 1f), 1.6f, 5f);
+            Luz("Luz dos racks", q, new Vector3(0f, 3f, 3.2f), LightType.Point, new Color(0.75f, 0.85f, 1f), 1.1f, 8f);
+            SalaDeEquipamentos2009(q);
 
             // Mesa-mapa com a ilha de São Luís.
             var tampo = Opaco("2009Tampo", new Color(0.03f, 0.06f, 0.12f), new Color(0.01f, 0.03f, 0.08f), smooth: 0.8f);
@@ -453,19 +554,32 @@ namespace TrilhaDaInovacao.EditorTools
             var brilhoPonto = AdicionarPulsar(pontoGo, new Color(0.4f, 1f, 1f), 1.5f, 1.2f, 0.12f);
 
             Texto("Título", q, new Vector3(0f, 1.78f, 1.7f), "Rede Metropolitana de São Luís · RNP", 0.065f, 2f, new Color(0.7f, 0.9f, 1f));
+            FichaReal(q, new Vector3(-0.85f, 0f, -0.45f), "Rede Metropolitana · São Luís",
+                "Projeto Redecomep, da RNP, com recursos da Finep. Começou com 43 km de fibra óptica ligando " +
+                "seis instituições de ensino e pesquisa, com investimento de R$ 668 mil: a 16ª rede " +
+                "metropolitana em operação no país.");
             var contador = Texto("Contador", q, new Vector3(0f, 1.6f, 1.7f), "0 km", 0.13f, 2f, Color.white);
             contador.fontStyle = FontStyles.Bold;
 
-            // Rack de rede ao fundo.
-            var rack = Bloco("Rack de rede", q, new Vector3(1.9f, 1f, 3.3f), new Vector3(0.6f, 2f, 0.6f), Opaco("2009Rack", new Color(0.12f, 0.12f, 0.14f), metal: 0.5f));
+            // Duas fileiras de 12 racks; a da frente mostra os LEDs para o visitante.
+            var rackMat = Opaco("2009Rack", new Color(0.12f, 0.12f, 0.14f), metal: 0.5f);
             var ledAzul = Opaco("2009Led", Color.black, new Color(0.2f, 0.6f, 1f));
             var gruposRede = new[] { new List<GameObject>(), new List<GameObject>(), new List<GameObject>() };
-            for (var l = 0; l < 10; l++)
-            for (var c = 0; c < 4; c++)
-                gruposRede[(c + l) % 3].Add(Bloco("LED", q, new Vector3(1.75f + c * 0.1f, 0.5f + l * 0.14f, 2.995f), new Vector3(0.04f, 0.02f, 0.01f), ledAzul));
+            foreach (var zFila in new[] { 3.4f, 5.4f })
+            for (var r = 0; r < 12; r++)
+            {
+                var x = -3.3f + r * 0.6f;
+                Bloco($"Rack {zFila}-{r}", q, new Vector3(x, 1.05f, zFila), new Vector3(0.58f, 2.1f, 1.07f), rackMat);
+                if (zFila > 4f) continue;
+                for (var l = 0; l < 8; l++)
+                for (var c = 0; c < 3; c++)
+                    gruposRede[(c + l + r) % 3].Add(Bloco("LED", q, new Vector3(x - 0.15f + c * 0.15f, 0.45f + l * 0.2f, 2.86f),
+                        new Vector3(0.04f, 0.02f, 0.01f), ledAzul));
+            }
+
             var controleRede = new GameObject("Controle dos LEDs");
             controleRede.transform.SetParent(q, false);
-            controleRede.transform.localPosition = rack.transform.localPosition;
+            controleRede.transform.localPosition = new Vector3(0f, 1f, 3.4f);
             var pisca = controleRede.AddComponent<PiscaLeds>();
             pisca.leds = new[]
             {
@@ -475,7 +589,7 @@ namespace TrilhaDaInovacao.EditorTools
             };
             pisca.cor = new Color(0.3f, 0.7f, 1f);
 
-            var ambiente = Fonte("Servidores", q, q.TransformPoint(new Vector3(1.9f, 1f, 3f)), true);
+            var ambiente = Fonte("Servidores", q, q.TransformPoint(new Vector3(0f, 1f, 3f)), true);
             var sons = Fonte("Conexões", q, q.TransformPoint(ponto), false);
 
             Decorar2009(q);
@@ -489,6 +603,7 @@ namespace TrilhaDaInovacao.EditorTools
             seq.ambiente = ambiente;
             seq.sons = sons;
 
+            LugarDoProximo(q, new Vector3(0.8f, 0.875f, 0.68f), true);   // na borda da mesa-mapa (atrás da marca já é a parede real)
             return Salvar(cena, LayoutTrilha.Cenas[3]);
         }
 
@@ -593,17 +708,29 @@ namespace TrilhaDaInovacao.EditorTools
                 new Color(1f, 0.92f, 0.8f), 0.9f, new Vector3(50f, 30f, 0f));
 
             var q = Quadro(4, "Laboratório Aberto SENAI · 2018");
+            // Laboratório Aberto como os espaços maker do SENAI: um salão amplo e claro
+            // (12 × 10 m, pé-direito de 3,6 m), com a bancada de prototipagem no meio,
+            // o quadro de ideias, as máquinas (cortadora a laser, fresadora CNC,
+            // impressoras 3D) junto às paredes e ilhas de trabalho ao fundo.
             var parede = Opaco("2018Parede", new Color(0.93f, 0.92f, 0.9f));
-            SalaFechada(q, new Vector3(0f, 0f, 1f), new Vector3(6f, 2.9f, 6f), Opaco("2018Piso", new Color(0.75f, 0.6f, 0.42f), smooth: 0.35f), parede, parede);
+            SalaFechada(q, new Vector3(0.5f, 0f, 2.5f), new Vector3(12f, 3.6f, 10f), Opaco("2018Piso", new Color(0.75f, 0.6f, 0.42f), smooth: 0.35f), parede, parede);
             var laranja = Opaco("SenaiLaranja", new Color(0.95f, 0.45f, 0.1f));
             var azul = Opaco("SenaiAzul", new Color(0.05f, 0.3f, 0.6f));
-            Bloco("Faixa laranja", q, new Vector3(0f, 1.2f, 3.94f), new Vector3(6f, 0.15f, 0.02f), laranja);
-            Bloco("Faixa azul", q, new Vector3(0f, 1.05f, 3.94f), new Vector3(6f, 0.08f, 0.02f), azul);
-            Texto("Placa", q, new Vector3(0f, 2.3f, 3.92f), "SENAI · Laboratório Aberto · 2 mar. 2018", 0.14f, 4.5f, new Color(0.12f, 0.18f, 0.3f));
-            Luz("Luz da oficina", q, new Vector3(0f, 2.5f, 1f), LightType.Point, new Color(1f, 0.93f, 0.82f), 1.6f, 6f);
-            var janela = Opaco("2018Janela", new Color(0.8f, 0.9f, 1f), new Color(0.8f, 0.9f, 1f) * 1.2f);
+            Bloco("Faixa laranja", q, new Vector3(0.5f, 1.2f, 7.44f), new Vector3(12f, 0.15f, 0.02f), laranja);
+            Bloco("Faixa azul", q, new Vector3(0.5f, 1.05f, 7.44f), new Vector3(12f, 0.08f, 0.02f), azul);
+            Texto("Placa", q, new Vector3(0.5f, 2.75f, 7.42f), "SENAI · Laboratório Aberto · 2 mar. 2018", 0.26f, 8f, new Color(0.12f, 0.18f, 0.3f));
+            var luminaria = Opaco("2018Luminaria", Color.white, Color.white * 1.4f);
             for (var i = 0; i < 3; i++)
-                Bloco($"Janela {i}", q, new Vector3(-2.94f, 1.7f, -0.5f + i * 1.6f), new Vector3(0.02f, 1.1f, 1.1f), janela);
+            for (var j = 0; j < 3; j++)
+                Bloco($"Luminária {i}-{j}", q, new Vector3(-3f + i * 3.5f, 3.57f, -0.5f + j * 3.3f), new Vector3(1.4f, 0.03f, 0.3f), luminaria);
+            Luz("Luz do fundo", q, new Vector3(1f, 3.1f, 5f), LightType.Point, new Color(1f, 0.95f, 0.88f), 1.3f, 9f);
+            FichaReal(q, new Vector3(-0.55f, 0f, -0.85f), "Laboratório Aberto · SENAI",
+                "Espaço maker aberto a estudantes, pesquisadores e empreendedores, com impressão 3D, " +
+                "corte a laser e eletrônica para criar protótipos e testar ideias antes de virarem produto.");
+            Luz("Luz da oficina", q, new Vector3(0f, 3.1f, 1f), LightType.Point, new Color(1f, 0.93f, 0.82f), 1.7f, 9f);
+            var janela = Opaco("2018Janela", new Color(0.8f, 0.9f, 1f), new Color(0.8f, 0.9f, 1f) * 1.2f);
+            for (var i = 0; i < 5; i++)
+                Bloco($"Janela {i}", q, new Vector3(-5.44f, 1.9f, -1.5f + i * 2f), new Vector3(0.02f, 1.4f, 1.3f), janela);
 
             // Bancada com a ideia (lâmpada), CAD, impressora 3D.
             var madeira = Opaco("2018Bancada", new Color(0.6f, 0.42f, 0.25f));
@@ -693,18 +820,39 @@ namespace TrilhaDaInovacao.EditorTools
 
             drone.gameObject.AddComponent<Girar>().grausPorSegundo = 45f;
 
-            // Parede de ideias, ferramentas e cortadora a laser.
+            // Quadro de ideias no meio do salão, de frente para o visitante, com post-its.
             var cores = new[] { new Color(1f, 0.9f, 0.3f), new Color(1f, 0.5f, 0.6f), new Color(0.5f, 0.9f, 0.6f), new Color(0.5f, 0.8f, 1f) };
+            var quadroIdeias = new Vector3(-2.5f, 1.45f, 3.7f);
+            Bloco("Quadro de ideias", q, quadroIdeias, new Vector3(2.2f, 1.3f, 0.04f), parede);
+            Bloco("Moldura do quadro", q, quadroIdeias + new Vector3(0f, 0f, 0.025f), new Vector3(2.3f, 1.4f, 0.02f), azul);
+            foreach (var x in new[] { -1.05f, 1.05f })
+                Bloco("Pé do quadro", q, quadroIdeias + new Vector3(x, -0.73f, 0f), new Vector3(0.05f, 1.45f, 0.3f), azul);
             var rngPostit = new System.Random(2018);
-            for (var i = 0; i < 16; i++)
+            for (var i = 0; i < 28; i++)
             {
-                var p = new Vector3(-2.4f + (i % 4) * 0.2f + (float)rngPostit.NextDouble() * 0.05f, 1.5f + (i / 4) * 0.18f, 3.93f);
+                var p = quadroIdeias + new Vector3(-0.9f + (i % 7) * 0.3f + (float)rngPostit.NextDouble() * 0.06f,
+                    -0.42f + (i / 7) * 0.28f + (float)rngPostit.NextDouble() * 0.04f, -0.025f);
                 Bloco($"Post-it {i}", q, p, new Vector3(0.14f, 0.14f, 0.005f), Opaco($"PostIt{i % 4}", cores[i % 4]));
             }
 
-            Bloco("Quadro de ferramentas", q, new Vector3(1.6f, 1.6f, 3.93f), new Vector3(1.4f, 0.9f, 0.03f), Opaco("2018Ferramentas", new Color(0.3f, 0.32f, 0.3f)));
-            Bloco("Cortadora a laser", q, new Vector3(2.2f, 0.45f, 2.6f), new Vector3(1f, 0.9f, 0.7f), Opaco("2018Laser", new Color(0.85f, 0.85f, 0.88f)));
-            Bloco("Janela da cortadora", q, new Vector3(2.2f, 0.91f, 2.6f), new Vector3(0.8f, 0.02f, 0.5f), Opaco("2018LaserJanela", new Color(0.4f, 0.1f, 0.05f), new Color(0.3f, 0.05f, 0f)));
+            // Área de máquinas, à direita: cortadora a laser, fresadora CNC e estante
+            // com impressoras 3D; quadro de ferramentas na parede do fundo.
+            var maquina = Opaco("2018Laser", new Color(0.85f, 0.85f, 0.88f));
+            var metalEscuro = Opaco("Metal", new Color(0.6f, 0.6f, 0.62f), metal: 0.6f);
+            Bloco("Quadro de ferramentas", q, new Vector3(3.6f, 1.7f, 7.43f), new Vector3(2f, 1f, 0.03f), Opaco("2018Ferramentas", new Color(0.3f, 0.32f, 0.3f)));
+            Bloco("Cortadora a laser", q, new Vector3(3.7f, 0.45f, 3.3f), new Vector3(0.8f, 0.9f, 1.3f), maquina);
+            Bloco("Janela da cortadora", q, new Vector3(3.7f, 0.91f, 3.3f), new Vector3(0.6f, 0.02f, 1.05f), Opaco("2018LaserJanela", new Color(0.4f, 0.1f, 0.05f), new Color(0.3f, 0.05f, 0f)));
+            Bloco("Mesa da CNC", q, new Vector3(4.9f, 0.4f, 5.4f), new Vector3(1.4f, 0.8f, 2f), maquina);
+            Bloco("Pórtico da CNC", q, new Vector3(4.9f, 1.05f, 5.1f), new Vector3(1.5f, 0.12f, 0.15f), metalEscuro);
+            foreach (var x in new[] { -0.7f, 0.7f })
+                Bloco("Coluna da CNC", q, new Vector3(4.9f + x, 0.95f, 5.1f), new Vector3(0.1f, 0.3f, 0.15f), metalEscuro);
+            Bloco("Cabeçote da CNC", q, new Vector3(4.7f, 0.93f, 5.0f), new Vector3(0.15f, 0.25f, 0.15f), laranja);
+            Bloco("Placa na CNC", q, new Vector3(4.9f, 0.81f, 5.5f), new Vector3(1f, 0.02f, 1.2f), madeira);
+            for (var i = 0; i < 3; i++)
+            for (var j = 0; j < 2; j++)
+                Bloco($"Impressora na estante {i}-{j}", q, new Vector3(6.15f, 0.95f + j * 0.75f, 1.6f + i * 0.6f), new Vector3(0.4f, 0.42f, 0.42f), azul);
+            for (var j = 0; j < 3; j++)
+                Bloco($"Prateleira {j}", q, new Vector3(6.15f, 0.72f + j * 0.75f, 2.2f), new Vector3(0.55f, 0.04f, 2.1f), madeira);
 
             var ambiente = Fonte("Oficina", q, q.TransformPoint(new Vector3(0f, 2f, 2.5f)), false);
 
@@ -722,6 +870,7 @@ namespace TrilhaDaInovacao.EditorTools
             seq.somImpressora = somImpressora;
             seq.ambiente = ambiente;
 
+            LugarDoProximo(q, new Vector3(0.45f, 0f, -0.85f), false);   // atrás do visitante, ao lado da ficha
             return Salvar(cena, LayoutTrilha.Cenas[4]);
         }
 
@@ -804,6 +953,9 @@ namespace TrilhaDaInovacao.EditorTools
             var proximidade = torreRaiz.gameObject.AddComponent<ProximityTrigger>();
             proximidade.ConfigurarNoEditor(0.85f);
 
+            FichaReal(q, new Vector3(-0.55f, 0f, -0.85f), "5G em São Luís · 19 set. 2022",
+                "A Anatel liberou a faixa de 3,5 GHz na cidade. Claro, TIM e Vivo tinham de ativar ao menos " +
+                "14 antenas cada. Para usar, bastava um celular compatível, sem trocar chip nem plano.");
             var rotulo = Texto("Faixa", q, centroTorre + new Vector3(-0.55f, 2.45f, 0f), "3,5 GHz · 19 set. 2022", 0.09f, 1.6f, new Color(0.9f, 0.75f, 1f));
             rotulo.gameObject.AddComponent<EncararUsuario>();
 
@@ -847,6 +999,7 @@ namespace TrilhaDaInovacao.EditorTools
             seq.barras = barras.ToArray();
             seq.ambiente = ambiente;
 
+            LugarDoProximo(q, new Vector3(0.45f, 0f, -0.85f), false);   // atrás do visitante, ao lado da ficha
             return Salvar(cena, LayoutTrilha.Cenas[5]);
         }
 
@@ -1099,6 +1252,7 @@ namespace TrilhaDaInovacao.EditorTools
             parteB.gameObject.SetActive(false);
             resultado.gameObject.SetActive(false);
 
+            LugarDoProximo(q, new Vector3(0.45f, 0f, -0.85f), false);   // no mirante, atrás do visitante
             return Salvar(cena, LayoutTrilha.Cenas[6]);
         }
     }
