@@ -143,12 +143,23 @@ namespace TrilhaDaInovacao.EditorTools
             return Salvar(cena, LayoutTrilha.Cenas[1]);
         }
 
-        /// <summary>Telefone de mesa dos anos 80: base, disco e fone.</summary>
+        /// <summary>
+        /// Telefone de mesa de baquelite com disco (Ferramentas/blender/telefone_1986.py).
+        /// O brilho vai no "Corpo" do modelo. Sem o FBX, volta ao telefone de primitivas.
+        /// </summary>
         static (GameObject raiz, GameObject baseTelefone) Telefone(string nome, Transform pai, Vector3 posicaoLocal)
         {
             var raiz = new GameObject(nome);
             raiz.transform.SetParent(pai, false);
             raiz.transform.localPosition = posicaoLocal;
+
+            // Altura real do modelo (18 cm): escala 1:1. A frente do Blender (-Y) chega
+            // ao Unity como +Z; o giro de 180° deixa o disco virado para o visitante.
+            var modelo = Modelo("Telefone/telefone-1986", raiz.transform, Vector3.zero, 180f, 0.18f);
+            var corpo = modelo != null ? modelo.transform.Find("Corpo") : null;
+            if (corpo != null) return (raiz, corpo.gameObject);
+            if (modelo != null) Object.DestroyImmediate(modelo);
+
             var bege = Opaco("1986Telefone", new Color(0.82f, 0.74f, 0.58f), smooth: 0.5f);
             var escuro = Opaco("1986TelefoneEscuro", new Color(0.25f, 0.2f, 0.16f), smooth: 0.5f);
             var baseT = Bloco("Base", raiz.transform, new Vector3(0f, 0.04f, 0f), new Vector3(0.24f, 0.08f, 0.2f), bege);

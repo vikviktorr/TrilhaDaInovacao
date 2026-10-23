@@ -645,7 +645,10 @@ namespace TrilhaDaInovacao.EditorTools
             Modelo(f + "chairDesk", q, new Vector3(-3.3f, 0f, 2.0f), -90f, 0.95f);
             Modelo(f + "bookcaseClosedWide", q, new Vector3(-4.04f, 0f, -0.3f), 90f, 1.9f);
             Modelo(f + "coatRackStanding", q, new Vector3(-4.0f, 0f, 5.9f), 0f, 1.75f);
-            Modelo(f + "radio", q, new Vector3(0.2f, 0.88f, 0.85f), 180f, 0.16f);
+            // Rádio retrô (Ferramentas/blender/radio_retro.py), 1:1: 30,6 cm de largura com a antena.
+            // Os bounds incluem a antena, que avança 2,3 cm para a esquerda: o gabinete
+            // fica em x 0,08…0,34, no balcão e longe do fio do telefone.
+            Modelo("Radio/radio-retro", q, new Vector3(0.187f, 0.88f, 0.85f), 180f, 0.306f, Medida.Largura);
             // Parede direita (face em x = 5,55).
             Modelo(f + "televisionVintage", q, new Vector3(5.15f, 0f, 0.6f), -90f, 0.75f);
             Modelo(f + "cardboardBoxClosed", q, new Vector3(5.1f, 0f, 5.8f), 15f, 0.5f);
