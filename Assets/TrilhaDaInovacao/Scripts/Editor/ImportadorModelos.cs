@@ -10,7 +10,7 @@ namespace TrilhaDaInovacao.EditorTools
     public class ImportadorModelos : AssetPostprocessor
     {
         // Mudou a regra de importação? Suba a versão para o Unity reimportar.
-        public override uint GetVersion() => 4;
+        public override uint GetVersion() => 5;
 
         void OnPreprocessModel()
         {
@@ -18,7 +18,8 @@ namespace TrilhaDaInovacao.EditorTools
 
             var importador = (ModelImporter)assetImporter;
             // Personagens trazem animações (idle, interact...): Legacy para tocar sem Animator.
-            var personagem = assetPath.Contains("/mini-characters/character-");
+            // Os de Modelos/Personagens são feitos no Blender (Ferramentas/blender/personagens.py).
+            var personagem = assetPath.Contains("/mini-characters/character-") || assetPath.Contains("/Modelos/Personagens/");
             importador.animationType = personagem ? ModelImporterAnimationType.Legacy : ModelImporterAnimationType.None;
             importador.importAnimation = personagem;
             importador.importCameras = false;

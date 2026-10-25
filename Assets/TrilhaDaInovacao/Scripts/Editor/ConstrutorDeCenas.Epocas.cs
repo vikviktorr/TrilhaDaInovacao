@@ -40,40 +40,67 @@ namespace TrilhaDaInovacao.EditorTools
             Luz("Luz fluorescente B", q, new Vector3(2.4f, 3.1f, 0.6f), LightType.Point, new Color(0.92f, 1f, 0.95f), 1.2f, 8f);
             Luz("Luz fluorescente C", q, new Vector3(0.6f, 3.1f, 3.6f), LightType.Point, new Color(0.92f, 1f, 0.95f), 1.3f, 8f);
 
-            // Bastidores da central, com LEDs.
-            var rackMat = Opaco("1986Rack", new Color(0.42f, 0.48f, 0.42f), smooth: 0.4f, metal: 0.3f);
+            // Fileira de bastidores da Trópico R (Ferramentas/blender/central_tropico.py): a central
+            // da TELMA tinha 1.008 terminais (Telebrasil, nov./dez. 1986). Cada bastidor tem 6 gavetas
+            // de placas; os LEDs de estado ficam na frente das placas e piscam com o tráfego.
             var ledMat = Opaco("1986Led", new Color(0.05f, 0.08f, 0.05f), new Color(0.2f, 1f, 0.35f));
+            var rackMat = Opaco("1986Rack", new Color(0.74f, 0.73f, 0.66f), smooth: 0.4f, metal: 0.3f);
             var bastidores = new List<PiscaLeds>();
-            for (var i = 0; i < 5; i++)
+            const int nBastidores = 6;
+            const float xPrimeiro = -2.6f, zBastidor = 4.2f;
+            // Frente das placas: 0,215 m à frente do centro do bastidor (cotas do script do Blender).
+            const float zFrentePlacas = zBastidor - 0.215f - 0.012f;
+            var grupos = new[] { new List<GameObject>(), new List<GameObject>() };
+            for (var i = 0; i < nBastidores; i++)
             {
-                var x = -2f + i * 1f;
-                var rack = Bloco($"Bastidor {i + 1}", q, new Vector3(x, 1f, 4.2f), new Vector3(0.6f, 2f, 0.5f), rackMat);
-                var grupos = new[] { new List<GameObject>(), new List<GameObject>() };
-                for (var c = 0; c < 3; c++)
-                for (var l = 0; l < 8; l++)
+                var x = xPrimeiro + i * 0.6f;
+                if (Modelo("Telma/bastidor-tropico", q, new Vector3(x, 0f, zBastidor), 180f, 2.42f) == null)
+                    Bloco($"Bastidor {i + 1}", q, new Vector3(x, 1.1f, zBastidor), new Vector3(0.6f, 2.2f, 0.45f), rackMat);
+                for (var c = 0; c < 4; c++)
+                for (var g = 0; g < 6; g++)
                 {
-                    grupos[(c + l) % 2].Add(Bloco($"LED {c}-{l}", q, new Vector3(x - 0.15f + c * 0.15f, 0.7f + l * 0.16f, 3.945f),
-                        new Vector3(0.05f, 0.03f, 0.01f), ledMat));
+                    grupos[(c + g + i) % 2].Add(Bloco($"LED {c}-{g}", q, new Vector3(x - 0.21f + c * 0.14f, 0.32f + g * 0.28f + 0.075f, zFrentePlacas),
+                        new Vector3(0.014f, 0.014f, 0.008f), ledMat));
                 }
+                if (i % 2 == 0) continue;
 
-                // Cada grupo vira uma malha só (2 draw calls por bastidor em vez de 24).
-                // O controle fica num objeto à parte para o bastidor poder ser mesclado.
-                var controle = new GameObject($"Controle dos LEDs {i + 1}");
+                // Cada par de bastidores tem dois grupos de LEDs, cada um uma malha só
+                // (2 draw calls por par em vez de 48). O controle fica num objeto à parte
+                // para os bastidores poderem ser mesclados.
+                var par = i / 2 + 1;
+                var controle = new GameObject($"Controle dos LEDs {par}");
                 controle.transform.SetParent(q, false);
-                controle.transform.localPosition = rack.transform.localPosition;
+                controle.transform.localPosition = new Vector3(x - 0.3f, 1.1f, zBastidor);
                 var pisca = controle.AddComponent<PiscaLeds>();
                 pisca.leds = new[]
                 {
-                    Combinar($"LEDs {i + 1}A", q, grupos[0], ledMat),
-                    Combinar($"LEDs {i + 1}B", q, grupos[1], ledMat)
+                    Combinar($"LEDs {par}A", q, grupos[0], ledMat),
+                    Combinar($"LEDs {par}B", q, grupos[1], ledMat)
                 };
                 bastidores.Add(pisca);
+                grupos = new[] { new List<GameObject>(), new List<GameObject>() };
             }
 
-            Bloco("Calha de cabos", q, new Vector3(0f, 2.45f, 4.2f), new Vector3(4.8f, 0.08f, 0.3f), Opaco("1986Calha", new Color(0.3f, 0.3f, 0.3f)));
-            Bloco("Placa", q, new Vector3(0f, 2.3f, 3.94f), new Vector3(2.4f, 0.26f, 0.02f), Opaco("1986Placa", new Color(0.08f, 0.15f, 0.35f)));
-            Texto("Texto da placa", q, new Vector3(0f, 2.3f, 3.925f), "TELMA · Central Trópico-R\n<size=40%>Projeto CPqD/Telebrás · até 10 mil assinantes · funciona sem ventilação forçada</size>",
-                0.13f, 2.3f, Color.white);
+            // Esteira de cabos sobre a fileira (os cabos dos bastidores sobem até ela).
+            var xCentroFileira = xPrimeiro + (nBastidores - 1) * 0.3f;
+            var larguraFileira = nBastidores * 0.6f + 0.4f;
+            var ferro = Opaco("1986Calha", new Color(0.3f, 0.3f, 0.3f));
+            foreach (var dz in new[] { -0.17f, 0.17f })
+                Bloco("Longarina da esteira", q, new Vector3(xCentroFileira, 2.66f, zBastidor + 0.1f + dz), new Vector3(larguraFileira, 0.06f, 0.025f), ferro);
+            for (var k = 0; k < 13; k++)
+                Bloco("Travessa da esteira", q, new Vector3(xCentroFileira - larguraFileira / 2 + 0.15f + k * (larguraFileira - 0.3f) / 12f, 2.64f, zBastidor + 0.1f),
+                    new Vector3(0.03f, 0.02f, 0.34f), ferro);
+            Bloco("Cabos na esteira", q, new Vector3(xCentroFileira, 2.69f, zBastidor + 0.1f), new Vector3(larguraFileira - 0.1f, 0.05f, 0.24f),
+                Opaco("1986Cabos", new Color(0.5f, 0.5f, 0.52f)));
+            // Tirantes fora da placa (que tem 2,9 m de largura).
+            foreach (var dx in new[] { -1.75f, 1.75f })
+                Bloco("Tirante da esteira", q, new Vector3(xCentroFileira + dx, 3.13f, zBastidor + 0.1f), new Vector3(0.02f, 0.94f, 0.02f), ferro);
+
+            // Placa da estação acima da fileira.
+            Bloco("Placa", q, new Vector3(xCentroFileira, 3.0f, zBastidor + 0.4f), new Vector3(2.9f, 0.4f, 0.02f), Opaco("1986Placa", new Color(0.08f, 0.15f, 0.35f)));
+            Texto("Texto da placa", q, new Vector3(xCentroFileira, 3.0f, zBastidor + 0.385f),
+                "TELMA · Estação Telma-1 · prefixo 232\n<size=45%>Central digital Trópico R (CPqD/Telebrás, fabricada pela PHT) · 1.008 terminais · " +
+                "em operação desde 13/11/1986 · dispensa ventilação forçada</size>", 0.12f, 2.8f, Color.white);
 
             // Balcão com o telefone de origem.
             Bloco("Balcão", q, new Vector3(-0.1f, 0.44f, 0.78f), new Vector3(0.9f, 0.88f, 0.5f), Opaco("1986Madeira", new Color(0.45f, 0.3f, 0.18f)));
@@ -103,8 +130,8 @@ namespace TrilhaDaInovacao.EditorTools
             // O pulso da ligação: telefone → bastidores → mapa → telefone de destino.
             var caminhoLocal = new[]
             {
-                new Vector3(-0.1f, 1f, 0.62f), new Vector3(-0.1f, 1.4f, 3.85f), new Vector3(-2f, 1.4f, 3.85f),
-                new Vector3(2f, 1.4f, 3.85f), pontoA + new Vector3(0f, 0f, -0.05f), pontoB + new Vector3(0f, 0f, -0.05f),
+                new Vector3(-0.1f, 1f, 0.62f), new Vector3(-0.1f, 1.4f, 3.85f), new Vector3(-2.6f, 1.4f, 3.85f),
+                new Vector3(0.4f, 1.4f, 3.85f), pontoA + new Vector3(0f, 0f, -0.05f), pontoB + new Vector3(0f, 0f, -0.05f),
                 new Vector3(2.1f, 1.3f, 0.95f), new Vector3(2.1f, 0.95f, 0.95f)
             };
             var caminho = new Vector3[caminhoLocal.Length];
@@ -126,6 +153,7 @@ namespace TrilhaDaInovacao.EditorTools
             pulso.rastro = rastro;
             pulso.caminho = caminho;
             pulso.bastidores = bastidores.ToArray();
+            pulso.raioFlash = 0.7f; // um controle a cada par de bastidores (1,2 m)
 
             var ambiente = Fonte("Zumbido da central", q, q.TransformPoint(new Vector3(0f, 1.5f, 3.9f)), true);
 
@@ -805,9 +833,9 @@ namespace TrilhaDaInovacao.EditorTools
 
             Texto("Título", q, new Vector3(0f, 1.78f, 1.7f), "Rede Metropolitana de São Luís · RNP", 0.065f, 2f, new Color(0.7f, 0.9f, 1f));
             FichaReal(q, new Vector3(-0.85f, 0f, -0.45f), "Rede Metropolitana · São Luís",
-                "Projeto Redecomep, da RNP, com recursos da Finep. Começou com 43 km de fibra óptica ligando " +
-                "seis instituições de ensino e pesquisa, com investimento de R$ 668 mil: a 16ª rede " +
-                "metropolitana em operação no país.");
+                "Projeto Redecomep, da RNP, com recursos da Finep. Em operação desde 23/10/2009: 43 km de fibra " +
+                "óptica a 10 Gbit/s ligando CLA, FAPEMA, IFMA, SEATI, UEMA e UFMA, com investimento de R$ 668 mil: " +
+                "a 16ª rede metropolitana em operação no país.");
             var contador = Texto("Contador", q, new Vector3(0f, 1.6f, 1.7f), "0 km", 0.13f, 2f, Color.white);
             contador.fontStyle = FontStyles.Bold;
 
@@ -885,7 +913,12 @@ namespace TrilhaDaInovacao.EditorTools
                 var pos = new Vector3(centro.x + (p.u - 0.5f) * largura, topo, centro.z + (p.v - 0.5f) * profundidade);
                 if (p.tipo == "rede")
                 {
+                    // Sigla da instituição em pé, acima da cabeça do pino (que fica a 13 cm). UFMA,
+                    // IFMA e CLA ficam a poucos centímetros no mapa: as siglas sobem em degraus.
+                    var degrau = new[] { 0.19f, 0.26f, 0.19f, 0.26f, 0.19f, 0.33f }[pinos.Count % 6];
                     pinos.Add(pos);
+                    var sigla = Texto($"Instituição {p.nome}", q, pos + Vector3.up * degrau, p.nome, 0.026f, 0.25f, new Color(0.85f, 0.95f, 1f));
+                    sigla.fontStyle = FontStyles.Bold;
                     continue;
                 }
 
@@ -982,27 +1015,22 @@ namespace TrilhaDaInovacao.EditorTools
             for (var i = 0; i < 5; i++)
                 Bloco($"Janela {i}", q, new Vector3(-5.44f, 1.9f, -1.5f + i * 2f), new Vector3(0.02f, 1.4f, 1.3f), janela);
 
-            // Bancada com a ideia (lâmpada), CAD, impressora 3D.
+            // Bancada com o computador do CAD e a impressora 3D.
             var madeira = Opaco("2018Bancada", new Color(0.6f, 0.42f, 0.25f));
             Bloco("Tampo da bancada", q, new Vector3(0f, 0.88f, 0.82f), new Vector3(1.6f, 0.05f, 0.75f), madeira);
             foreach (var x in new[] { -0.75f, 0.75f })
             foreach (var z in new[] { 0.5f, 1.14f })
                 Bloco("Perna", q, new Vector3(x, 0.43f, z), new Vector3(0.05f, 0.86f, 0.05f), madeira);
 
-            var lampadaRaiz = new GameObject("Lâmpada (ideia)").transform;
-            lampadaRaiz.SetParent(q, false);
-            lampadaRaiz.localPosition = new Vector3(-0.42f, 0.905f, 0.62f);
-            Bloco("Soquete", lampadaRaiz, new Vector3(0f, 0.03f, 0f), new Vector3(0.07f, 0.03f, 0.07f), Opaco("Metal", new Color(0.6f, 0.6f, 0.62f), metal: 0.6f), PrimitiveType.Cylinder);
-            var bulbo = Bloco("Bulbo", lampadaRaiz, new Vector3(0f, 0.15f, 0f), Vector3.one * 0.18f,
-                Opaco("2018Bulbo", new Color(1f, 0.92f, 0.55f), new Color(0.5f, 0.42f, 0.1f)), PrimitiveType.Sphere);
-            bulbo.AddComponent<SphereCollider>().radius = 0.6f;
-            var poke = bulbo.AddComponent<PokeTrigger>();
-            poke.ConfigurarNoEditor(new[] { bulbo.GetComponent<Renderer>() }, new Color(1f, 0.9f, 0.4f));
-            var brilhoLampada = AdicionarPulsar(bulbo, new Color(1f, 0.85f, 0.3f), 1.5f, 1.2f, 0.08f);
-
-            Bloco("Suporte do monitor", q, new Vector3(0.52f, 1.0f, 1.05f), new Vector3(0.05f, 0.2f, 0.05f), Opaco("Metal", Color.white));
-            Bloco("Monitor", q, new Vector3(0.52f, 1.25f, 1.05f), new Vector3(0.62f, 0.4f, 0.03f), Opaco("2018Monitor", new Color(0.1f, 0.1f, 0.12f)));
-            Bloco("Tela CAD", q, new Vector3(0.52f, 1.25f, 1.033f), new Vector3(0.57f, 0.35f, 0.005f), Opaco("2018Tela", Color.black, new Color(0.04f, 0.08f, 0.2f)));
+            Bloco("Suporte do monitor", q, new Vector3(0.46f, 0.975f, 0.62f), new Vector3(0.05f, 0.15f, 0.05f), Opaco("Metal", Color.white));
+            Bloco("Monitor", q, new Vector3(0.46f, 1.22f, 0.62f), new Vector3(0.52f, 0.34f, 0.03f), Opaco("2018Monitor", new Color(0.1f, 0.1f, 0.12f)));
+            // A ideia começa no computador: o visitante toca a tela e o CAD desenha a peça.
+            var telaCad = Bloco("Tela CAD", q, new Vector3(0.46f, 1.22f, 0.603f), new Vector3(0.48f, 0.29f, 0.005f), Opaco("2018Tela", Color.black, new Color(0.04f, 0.08f, 0.2f)));
+            var areaTela = telaCad.AddComponent<BoxCollider>();
+            areaTela.size = new Vector3(1f, 1f, 0.15f / 0.005f);
+            var poke = telaCad.AddComponent<PokeTrigger>();
+            poke.ConfigurarNoEditor(new[] { telaCad.GetComponent<Renderer>() }, new Color(0.4f, 0.8f, 1f));
+            var brilhoTela = AdicionarPulsar(telaCad, new Color(0.3f, 0.7f, 1f), 1.2f, 1.2f);
             var cadGo = new GameObject("Desenho digital (CAD)");
             cadGo.transform.SetParent(q, false);
             var cadLinha = cadGo.AddComponent<LineRenderer>();
@@ -1010,7 +1038,7 @@ namespace TrilhaDaInovacao.EditorTools
             cadLinha.sharedMaterial = LinhaSolida("Linha");
             cadLinha.startColor = cadLinha.endColor = new Color(0.4f, 0.9f, 1f);
             var cad = cadGo.AddComponent<LinhaProgressiva>();
-            cad.pontos = DesenhoLampada(new Vector3(0.52f, 1.28f, 1.028f), 0.085f);
+            cad.pontos = DesenhoDrone(new Vector3(0.46f, 1.22f, 0.598f), 0.1f);
 
             // Impressora FDM cartesiana (Ender-3) em tamanho real, feita no Blender
             // (Ferramentas/blender/impressora_3d.py) com as partes de cada eixo separadas.
@@ -1020,6 +1048,7 @@ namespace TrilhaDaInovacao.EditorTools
             var impressora = impressoraRaiz.gameObject.AddComponent<ImpressaoEmCamadas>();
             var modeloImpressora = Modelo("Impressora/impressora-3d", impressoraRaiz, Vector3.zero, 180f, 0.675f);
             var pontoBico = new Vector3(0f, 0.025f, 0f);
+            GameObject painelImpressora = null;
             if (modeloImpressora != null)
             {
                 var m = modeloImpressora.transform;
@@ -1030,11 +1059,26 @@ namespace TrilhaDaInovacao.EditorTools
                 // onde sai a primeira camada.
                 var b = impressora.mesa.GetComponent<Renderer>().bounds;
                 pontoBico = impressoraRaiz.InverseTransformPoint(new Vector3(b.center.x, b.max.y, b.center.z));
+                painelImpressora = m.Find("Painel")?.gameObject;
             }
             else
             {
                 Bloco("Mesa", impressoraRaiz, new Vector3(0f, 0.02f, 0f), new Vector3(0.24f, 0.01f, 0.24f), Opaco("2018Mesa", new Color(0.2f, 0.2f, 0.25f)));
             }
+
+            // Como na Ender-3 de verdade, a impressão começa no painel: clique no botão do LCD.
+            // A área de toque cobre o painel inteiro e tem no mínimo 15 cm (alvo de mão da Meta).
+            if (painelImpressora == null)
+                painelImpressora = Bloco("Painel", impressoraRaiz, new Vector3(-0.165f, 0.055f, -0.215f), new Vector3(0.12f, 0.075f, 0.05f),
+                    Opaco("2018Painel", new Color(0.16f, 0.16f, 0.18f)));
+            var caixaPainel = painelImpressora.GetComponent<MeshFilter>().sharedMesh.bounds;
+            var areaPainel = painelImpressora.AddComponent<BoxCollider>();
+            areaPainel.center = caixaPainel.center;
+            var escalaPainel = painelImpressora.transform.lossyScale;
+            var tamanhoPainel = Vector3.Max(Vector3.Scale(caixaPainel.size, escalaPainel) + Vector3.one * 0.04f, Vector3.one * 0.15f);
+            areaPainel.size = new Vector3(tamanhoPainel.x / escalaPainel.x, tamanhoPainel.y / escalaPainel.y, tamanhoPainel.z / escalaPainel.z);
+            var painelPoke = painelImpressora.AddComponent<PokeTrigger>();
+            painelPoke.ConfigurarNoEditor(new[] { painelImpressora.GetComponent<Renderer>() }, new Color(0.35f, 0.75f, 1f));
 
             var pecaPivo = new GameObject("Peça (pivô)").transform;
             pecaPivo.SetParent(impressoraRaiz, false);
@@ -1047,7 +1091,7 @@ namespace TrilhaDaInovacao.EditorTools
             // Protótipo pronto: um pequeno drone que gira na frente da bancada.
             var drone = new GameObject("Protótipo (drone)").transform;
             drone.SetParent(q, false);
-            drone.localPosition = new Vector3(0.4f, 1.15f, 0.6f);
+            drone.localPosition = new Vector3(-0.1f, 1.22f, 0.42f);
             // Quadricóptero de PLA ciano feito na impressora (Ferramentas/blender/drone.py).
             var modeloDrone = Modelo("Drone/drone", drone, new Vector3(0f, -0.03f, 0f), 0f, 0.44f, Medida.MaiorLado);
             if (modeloDrone != null)
@@ -1112,10 +1156,11 @@ namespace TrilhaDaInovacao.EditorTools
             seq.estudante = estudante;
             seq.pesquisador = pesquisador;
             seq.empreendedora = empreendedora;
-            seq.lampada = poke;
-            seq.brilhoLampada = brilhoLampada;
+            seq.telaCad = poke;
+            seq.brilhoTela = brilhoTela;
             seq.desenhoDigital = cad;
             seq.impressora = impressora;
+            seq.painelImpressora = painelPoke;
             seq.prototipo = drone;
             seq.somImpressora = somImpressora;
             seq.ambiente = ambiente;
@@ -1124,24 +1169,36 @@ namespace TrilhaDaInovacao.EditorTools
             return Salvar(cena, LayoutTrilha.Cenas[4]);
         }
 
-        /// <summary>Contorno de uma lâmpada em linhas, desenhado na tela do CAD.</summary>
-        static Vector3[] DesenhoLampada(Vector3 centro, float raio)
+        /// <summary>
+        /// Vista de cima do quadricóptero que a impressora vai fazer, num traço só: do centro
+        /// sai cada braço até o anel da hélice, contorna o anel e volta pelo braço.
+        /// </summary>
+        static Vector3[] DesenhoDrone(Vector3 centro, float raio)
         {
             var pontos = new List<Vector3>();
-            for (var i = 0; i <= 40; i++)
+            var anel = raio * 0.38f;
+            for (var b = 0; b < 4; b++)
             {
-                var a = Mathf.Lerp(-40f, 220f, i / 40f) * Mathf.Deg2Rad;
-                pontos.Add(centro + new Vector3(Mathf.Cos(a) * raio, Mathf.Sin(a) * raio, 0f));
+                var direcao = Quaternion.Euler(0f, 0f, 45f + b * 90f) * Vector3.right;
+                var ponta = centro + direcao * raio;
+                pontos.Add(centro);
+                pontos.Add(ponta - direcao * anel);
+                var inicio = Mathf.Atan2(-direcao.y, -direcao.x);
+                for (var i = 0; i <= 16; i++)
+                {
+                    var a = inicio + i / 16f * Mathf.PI * 2f;
+                    pontos.Add(ponta + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * anel);
+                }
+                pontos.Add(centro);
             }
 
-            var baseY = centro.y - raio * 1.05f;
-            var esq = centro.x - raio * 0.45f;
-            var dir = centro.x + raio * 0.45f;
-            pontos.Add(new Vector3(esq, baseY, centro.z));
-            pontos.Add(new Vector3(esq, baseY - raio * 0.5f, centro.z));
-            pontos.Add(new Vector3(dir, baseY - raio * 0.5f, centro.z));
-            pontos.Add(new Vector3(dir, baseY, centro.z));
-            pontos.Add(centro + new Vector3(Mathf.Cos(-40f * Mathf.Deg2Rad) * raio, Mathf.Sin(-40f * Mathf.Deg2Rad) * raio, 0f));
+            // Corpo central.
+            var meio = raio * 0.22f;
+            pontos.Add(centro + new Vector3(-meio, -meio, 0f));
+            pontos.Add(centro + new Vector3(meio, -meio, 0f));
+            pontos.Add(centro + new Vector3(meio, meio, 0f));
+            pontos.Add(centro + new Vector3(-meio, meio, 0f));
+            pontos.Add(centro + new Vector3(-meio, -meio, 0f));
             return pontos.ToArray();
         }
 
@@ -1214,17 +1271,18 @@ namespace TrilhaDaInovacao.EditorTools
             var ondasMapa = Ondas("Ondas no mapa", q, centroTorre + new Vector3(0f, 0.02f, 0f), 2.1f, pulso);
             var ondasCidade = Ondas("Ondas na cidade", q, new Vector3(0f, abaixo + 0.2f, 1.4f), 95f, null);
 
-            // Painel comparativo (valores pendentes no documento: só ilustrativo).
+            // Painel com dados do lançamento: bairros de São Luís com 5G no primeiro dia, segundo
+            // as operadoras (Jornal Pequeno, 19 set. 2022). A TIM cobria 43,9% da população.
             var painel = new GameObject("Painel comparativo").transform;
             painel.SetParent(q, false);
             painel.localPosition = new Vector3(1.15f, 1.45f, 1.45f);
             painel.localRotation = Quaternion.Euler(0f, 25f, 0f);
             Bloco("Fundo", painel, new Vector3(0f, 0f, 0.02f), new Vector3(0.95f, 0.78f, 0.02f), Opaco("2022Painel", new Color(0.05f, 0.06f, 0.14f)));
-            Texto("Título", painel, new Vector3(0f, 0.3f, 0f), "Gerações de rede móvel", 0.055f, 0.9f, Color.white);
+            Texto("Título", painel, new Vector3(0f, 0.3f, 0f), "Bairros com 5G no 1º dia", 0.055f, 0.9f, Color.white);
             var barras = new List<Transform>();
-            var nomes = new[] { "3G", "4G", "5G" };
-            var alturas = new[] { 0.12f, 0.24f, 0.42f };
-            var coresBarra = new[] { new Color(0.5f, 0.55f, 0.6f), new Color(0.3f, 0.55f, 1f), new Color(0.85f, 0.3f, 1f) };
+            var nomes = new[] { "TIM", "Claro", "Vivo" };
+            var bairros = new[] { 25, 9, 7 };
+            var coresBarra = new[] { new Color(0.3f, 0.55f, 1f), new Color(1f, 0.3f, 0.3f), new Color(0.75f, 0.35f, 1f) };
             for (var i = 0; i < 3; i++)
             {
                 var x = -0.25f + i * 0.25f;
@@ -1232,12 +1290,14 @@ namespace TrilhaDaInovacao.EditorTools
                 pivo.SetParent(painel, false);
                 pivo.localPosition = new Vector3(x, -0.22f, 0f);
                 Bloco("Barra", pivo, new Vector3(0f, 0.5f, 0f), new Vector3(0.14f, 1f, 0.02f), Opaco("2022Barra" + nomes[i], coresBarra[i], coresBarra[i] * 0.4f));
-                pivo.localScale = new Vector3(1f, alturas[i], 1f);
+                // 25 bairros = 0,42 m de barra.
+                pivo.localScale = new Vector3(1f, 0.42f * bairros[i] / 25f, 1f);
                 barras.Add(pivo);
-                Texto($"Rótulo {nomes[i]}", painel, new Vector3(x, -0.27f, 0f), nomes[i], 0.05f, 0.2f, Color.white);
+                Texto($"Valor {nomes[i]}", painel, new Vector3(x, -0.22f + 0.42f * bairros[i] / 25f + 0.035f, 0f), bairros[i].ToString(), 0.04f, 0.2f, Color.white);
+                Texto($"Rótulo {nomes[i]}", painel, new Vector3(x, -0.27f, 0f), nomes[i], 0.045f, 0.24f, Color.white);
             }
 
-            Texto("Nota", painel, new Vector3(0f, -0.35f, 0f), "Comparação ilustrativa · valores a definir", 0.026f, 0.9f, new Color(0.7f, 0.7f, 0.8f));
+            Texto("Nota", painel, new Vector3(0f, -0.35f, 0f), "Segundo as operadoras · Jornal Pequeno, 19 set. 2022", 0.024f, 0.9f, new Color(0.7f, 0.7f, 0.8f));
 
             var ambiente = Fonte("Cidade", q, q.TransformPoint(new Vector3(0f, 1f, 3f)), false);
 
@@ -1321,7 +1381,10 @@ namespace TrilhaDaInovacao.EditorTools
             // Centro de Lançamento de Alcântara: planalto no litoral, vegetação baixa,
             // chão de laterita avermelhada e as plataformas espalhadas pela área.
             Bloco("Vegetação", parteB, new Vector3(0f, -0.08f, 20f), new Vector3(240f, 0.1f, 240f), Opaco("2025Vegetacao", new Color(0.24f, 0.32f, 0.18f)));
-            Bloco("Mar", parteB, new Vector3(0f, -0.06f, 110f), new Vector3(400f, 0.1f, 100f), Opaco("Mar", Color.white));
+            // Costa: o Atlântico à frente e à esquerda; à direita o planalto continua, e é
+            // lá, dentro do CLA, que ficou a zona de segurança onde os pedaços caíram.
+            Bloco("Chão do planalto", parteB, new Vector3(0f, -0.12f, 0f), new Vector3(3000f, 0.1f, 3000f), Opaco("2025Planalto", new Color(0.13f, 0.17f, 0.1f)));
+            Bloco("Mar", parteB, new Vector3(-675f, -0.06f, 870f), new Vector3(1650f, 0.1f, 1620f), Opaco("Mar", Color.white));
             var laterita = Opaco("2025Laterita", new Color(0.55f, 0.3f, 0.18f));
             Bloco("Área da plataforma (laterita)", parteB, new Vector3(0f, -0.055f, 25f), new Vector3(46f, 0.1f, 40f), laterita);
             Bloco("Mirante", parteB, new Vector3(0f, -0.05f, 1.5f), new Vector3(12f, 0.1f, 8f), Opaco("2025Patio", new Color(0.58f, 0.58f, 0.57f)));
@@ -1412,9 +1475,18 @@ namespace TrilhaDaInovacao.EditorTools
             fogo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             var rastro = Particulas("Rastro", hanbit, new Vector3(0f, -0.5f, 0f), fumacaMat, 6f, 1f, 3f, 45f, new Color(0.9f, 0.9f, 0.9f, 0.7f), 8f);
             rastro.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            var fumacaBase = Particulas("Fumaça da base", parteB, plataforma + new Vector3(0f, 0.8f, 0f), fumacaMat, 4f, 7f, 6f, 70f,
-                new Color(0.85f, 0.85f, 0.85f, 0.75f), 75f, gravidade: -0.03f);
+            // Na transmissão da Innospace, a fumaça da ignição sai rasteira para os dois lados da
+            // plataforma e sobe em rolos, acesa de laranja pelo motor.
+            var fumacaBase = Particulas("Fumaça da base", parteB, plataforma + new Vector3(0f, 0.8f, 0f), fumacaMat, 5f, 7f, 8f, 90f,
+                new Color(1f, 0.86f, 0.7f, 0.8f), 75f, gravidade: -0.03f);
             fumacaBase.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            foreach (var lado in new[] { -1f, 1f })
+            {
+                // Filhas da fumaça da base: tocam e param junto com ela.
+                var lateral = Particulas("Fumaça lateral", fumacaBase.transform, Vector3.zero, fumacaMat, 4f, 12f, 7f, 60f,
+                    new Color(1f, 0.8f, 0.62f, 0.8f), 25f, gravidade: -0.05f);
+                lateral.transform.rotation = Quaternion.LookRotation(q.TransformDirection(new Vector3(lado, 0.12f, 0f)));
+            }
             var clarao = Luz("Clarão", parteB, plataforma + new Vector3(0f, 2f, -2f), LightType.Point, new Color(1f, 0.65f, 0.3f), 0f, 70f);
             var motor = Fonte("Motor", parteB, q.TransformPoint(plataforma), true);
             motor.minDistance = 12f;
@@ -1427,8 +1499,57 @@ namespace TrilhaDaInovacao.EditorTools
             decolagem.rastro = rastro;
             decolagem.clarao = clarao;
             decolagem.motor = motor;
+            decolagem.rumo = new Vector3(0.6f, 0f, 1f);
 
-            // Explosão no ar: bola de fogo, nuvem de fumaça e destroços em chamas caindo.
+            // Camada de nuvens baixas da noite do lançamento: o contato com o foguete
+            // se perdeu quando ele a atravessou (Innospace). Partículas grandes e paradas.
+            var nuvens = Particulas("Nuvens", parteB, Vector3.zero, fumacaMat, 1e6f, 0f, 200f, 0f, new Color(0.16f, 0.17f, 0.21f, 0.88f), 0f, maximo: 30);
+            var principalNuvens = nuvens.main;
+            principalNuvens.playOnAwake = true;
+            var corNuvens = nuvens.colorOverLifetime;
+            corNuvens.enabled = false;
+            var tamanhoNuvens = nuvens.sizeOverLifetime;
+            tamanhoNuvens.enabled = false;
+            nuvens.GetComponent<ParticleSystemRenderer>().maxParticleSize = 4f;
+            decolagem.nuvens = nuvens;
+
+            // Brilho do motor e das chamas visto através das nuvens, desenhado por cima delas.
+            var brilho = Particulas("Brilho nas nuvens", parteB, Vector3.zero, Particula("BrilhoNuvem", true), 1f, 0f, 1f, 0f,
+                Color.white, 0f, maximo: 1);
+            var principalBrilho = brilho.main;
+            principalBrilho.playOnAwake = false;
+            var rBrilho = brilho.GetComponent<ParticleSystemRenderer>();
+            rBrilho.sortingOrder = 5;
+            // O clarão chega a ocupar boa parte da tela (o padrão corta em metade dela).
+            rBrilho.maxParticleSize = 10f;
+            decolagem.brilho = brilho;
+
+            // Três ou quatro pedaços (Innospace): coifa com o 2º estágio, interestágio e o
+            // 1º estágio partido em dois, cada um queimando e soltando fumaça na queda.
+            var casco = Opaco("2025Pedaco", new Color(0.9f, 0.9f, 0.9f));
+            var queimado = Opaco("2025PedacoQueimado", new Color(0.12f, 0.1f, 0.09f));
+            var partes = new (string nome, float comprimento)[]
+                { ("1º estágio, parte de baixo", 6f), ("1º estágio, parte de cima", 6.5f), ("Interestágio", 2.4f), ("Coifa e 2º estágio", 6.9f) };
+            decolagem.pedacos = new Transform[partes.Length];
+            for (var i = 0; i < partes.Length; i++)
+            {
+                var pedaco = new GameObject($"Pedaço · {partes[i].nome}").transform;
+                pedaco.SetParent(parteB, false);
+                Bloco("Casco", pedaco, Vector3.zero, new Vector3(1.4f, partes[i].comprimento / 2f, 1.4f), casco, PrimitiveType.Cylinder);
+                Bloco("Ruptura", pedaco, new Vector3(0f, partes[i].comprimento / 2f, 0f), new Vector3(1.45f, 0.25f, 1.45f), queimado, PrimitiveType.Cylinder);
+                Particulas("Chamas", pedaco, Vector3.zero, fogoMat, 0.8f, 2f, 5f, 40f, new Color(1f, 0.6f, 0.25f), 25f, maximo: 50);
+                Particulas("Fumaça", pedaco, Vector3.zero, fumacaMat, 5f, 0.5f, 7f, 12f, new Color(0.3f, 0.3f, 0.3f, 0.8f), 20f, maximo: 70);
+                pedaco.gameObject.SetActive(false);
+                decolagem.pedacos[i] = pedaco;
+            }
+
+            // Zona de segurança terrestre do CLA, à direita, entre a costa e a vegetação.
+            decolagem.impactos = new[]
+            {
+                new Vector3(232f, 0f, 168f), new Vector3(262f, 0f, 140f), new Vector3(205f, 0f, 198f), new Vector3(283f, 0f, 188f)
+            };
+
+            // Explosão ao atingir o chão: bola de fogo, nuvem de fumaça e destroços.
             var bola = Particulas("Bola de fogo", parteB, Vector3.zero, fogoMat, 1.8f, 13f, 16f, 0f, new Color(1f, 0.6f, 0.2f), 180f, maximo: 120);
             var fumacaExplosao = Particulas("Fumaça da explosão", parteB, Vector3.zero, fumacaMat, 8f, 6f, 22f, 0f,
                 new Color(0.35f, 0.33f, 0.32f, 0.85f), 180f, gravidade: -0.02f, maximo: 80);
@@ -1447,10 +1568,17 @@ namespace TrilhaDaInovacao.EditorTools
             decolagem.fumacaExplosao = fumacaExplosao;
             decolagem.destrocos = destrocos;
 
+            // O fogo continua no chão depois do impacto, visto de longe.
+            var incendio = Particulas("Incêndio no solo", parteB, Vector3.zero, fogoMat, 1.6f, 4f, 10f, 30f, new Color(1f, 0.55f, 0.2f), 15f, maximo: 70);
+            incendio.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            Particulas("Fumaça do incêndio", incendio.transform, Vector3.up * 4f, fumacaMat, 9f, 3f, 16f, 6f,
+                new Color(0.22f, 0.2f, 0.2f, 0.7f), 10f, gravidade: -0.02f, maximo: 70);
+            decolagem.incendio = incendio;
+
             Decorar2025(parteB);
 
             // Engenheiro da equipe de lançamento, no mirante, que explica a falha.
-            var engenheiro = Personagem("Kenney/mini-characters/character-male-d", parteB, new Vector3(2.9f, 0f, 1.0f), -110f, 1.75f,
+            var engenheiro = Personagem("Personagens/engenheiro", parteB, new Vector3(2.9f, 0f, 1.0f), -110f, 1.75f,
                 "emote-yes", "interact-right");
             DarVoz(engenheiro, "Engenheiro");
 
@@ -1467,12 +1595,14 @@ namespace TrilhaDaInovacao.EditorTools
             resultado.SetParent(parteB, false);
             resultado.localPosition = new Vector3(0.1f, 1.6f, 1.7f);
             resultado.gameObject.AddComponent<EncararUsuario>();
-            Bloco("Fundo", resultado, new Vector3(0f, 0f, 0.02f), new Vector3(1.1f, 0.82f, 0.02f), Opaco("2025Resultado", new Color(0.3f, 0.06f, 0.06f)));
+            Bloco("Fundo", resultado, new Vector3(0f, 0f, 0.02f), new Vector3(1.2f, 0.92f, 0.02f), Opaco("2025Resultado", new Color(0.3f, 0.06f, 0.06f)));
             Texto("Texto", resultado, Vector3.zero,
-                "<b>Resultado da missão</b>\n<size=80%>Uma anomalia levou à perda da missão.\nO PION-BR2 não chegou à órbita.\n\n" +
-                "Causa: vazamento na vedação da câmara de\ncombustão do 1º estágio, aos 33 s de voo.\n\n" +
-                "<size=70%>Fontes: AEB, Relatório de gestão 2025;\nInnospace e CENIPA, 2026</size></size>",
-                0.05f, 1.05f, Color.white).rectTransform.sizeDelta = new Vector2(1.05f, 0.78f);
+                "<b>Resultado da missão</b>\n<size=78%>22/12/2025, 22h13. Subida normal até o Max-Q.\n" +
+                "Aos 33 s, o gás vazou pela vedação e a câmara de\ncombustão do 1º estágio rompeu. Sem empuxo, o foguete\n" +
+                "se partiu em 3 ou 4 partes, que explodiram ao cair\nna zona de segurança do CLA. Ninguém se feriu.\n" +
+                "O PION-BR2 não chegou à órbita.\n\n" +
+                "<size=72%>Fontes: FAB; Innospace; AEB e CENIPA, 2026</size></size>",
+                0.05f, 1.15f, Color.white).rectTransform.sizeDelta = new Vector2(1.15f, 0.88f);
 
             var aviso = Texto("Aviso de reconstituição", parteB, new Vector3(-0.3f, 1.12f, 2.45f), "Reconstituição feita para este projeto",
                 0.04f, 1.2f, new Color(1f, 0.95f, 0.8f)).gameObject;

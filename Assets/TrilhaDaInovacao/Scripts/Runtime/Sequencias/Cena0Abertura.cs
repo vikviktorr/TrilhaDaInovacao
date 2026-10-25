@@ -9,11 +9,14 @@ namespace TrilhaDaInovacao
         public LinhaDoTempoHub linhaDoTempo;
         public PokeTrigger botaoComecar;
         public GameObject creditos;
+        [Tooltip("Painel de volume (vozes e efeitos), ao alcance de quem está na marca de início.")]
+        public GameObject painelVolume;
 
         protected override IEnumerator Rodar()
         {
             linhaDoTempo.ApagarTodos();
             Mostrar(creditos, false);
+            Mostrar(painelVolume, true);
             Mostrar(botaoComecar.gameObject, false);
 
             yield return Dizer("ola");

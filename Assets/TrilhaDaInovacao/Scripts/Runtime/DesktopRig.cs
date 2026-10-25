@@ -8,8 +8,11 @@ namespace TrilhaDaInovacao
     /// Modo sem headset, para testar a visita no PC e apresentar no
     /// computador: WASD anda, botão direito (ou Tab para travar o cursor) olha,
     /// clique esquerdo toca o objeto sob a mira. A altura dos olhos é fixa.
+    /// − e = ajustam o volume das vozes; [ e ] o dos efeitos (<see cref="ConfigAudio"/>).
     /// O corpo é uma cápsula que desliza nas paredes e móveis do cenário
     /// (camada <see cref="LayoutTrilha.CamadaCenario"/>) em vez de atravessá-los.
+    /// Depois de cada teleporte (início, troca de cena, tour), <see cref="Desentalar"/>
+    /// tira o corpo de dentro de um móvel, se ele tiver nascido encostado em um.
     /// </summary>
     public class DesktopRig : MonoBehaviour
     {
@@ -22,11 +25,13 @@ namespace TrilhaDaInovacao
 
         const float Pele = 0.02f;
         const float AlturaJoelho = 0.3f;
+        const int MascaraCenario = 1 << LayoutTrilha.CamadaCenario;
 
         float yaw, pitch;
         bool cursorTravado;
         bool mostrarAjuda = true;
         GUIStyle estilo;
+        float avisoVolumeAte;
 
         public bool Ativo { get; private set; }
 
@@ -50,6 +55,61 @@ namespace TrilhaDaInovacao
             yaw = Quaternion.LookRotation(olhar).eulerAngles.y - cameraRig.eulerAngles.y;
             pitch = inclinacao;
             AplicarRotacao();
+            Desentalar();
+        }
+
+        /// <summary>
+        /// Se o corpo está dentro de um móvel ou parede, leva-o ao ponto livre mais
+        /// próximo (anéis de 10 em 10 cm até 2 m, 16 direções). Devolve true se moveu.
+        /// </summary>
+        public bool Desentalar()
+        {
+            if (!Ativo) return false;
+            Physics.SyncTransforms();
+            var cabeca = cameraTransform.position;
+            if (!Ocupado(cabeca)) return false;
+
+            for (var raio = 0.1f; raio <= 2.001f; raio += 0.1f)
+            for (var i = 0; i < 16; i++)
+            {
+                var a = i * Mathf.PI / 8f;
+                var desvio = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * raio;
+                // Só aceita um ponto alcançável a pé: nada de atravessar a parede para o outro lado.
+                if (Ocupado(cabeca + desvio) || Bloqueado(cabeca, desvio)) continue;
+                cameraRig.position += desvio;
+                var aviso = $"Visitante nasceu dentro do cenário em ({cabeca.x:0.00}, {cabeca.z:0.00}); movido {raio * 100f:0} cm.";
+                Debug.Log($"[Trilha da Inovação] {aviso}");
+                if (QARelatorio.Instancia != null) QARelatorio.Instancia.Problema(aviso);
+                return true;
+            }
+
+            Debug.LogWarning($"[Trilha da Inovação] Nenhum ponto livre perto de ({cabeca.x:0.00}, {cabeca.z:0.00}).");
+            return false;
+        }
+
+        void Capsula(Vector3 cabeca, out Vector3 baixo, out Vector3 alto)
+        {
+            var chao = cameraRig.position.y;
+            baixo = new Vector3(cabeca.x, chao + AlturaJoelho + raioCorpo, cabeca.z);
+            alto = new Vector3(cabeca.x, Mathf.Max(baixo.y, cabeca.y - raioCorpo), cabeca.z);
+        }
+
+        bool Ocupado(Vector3 cabeca)
+        {
+            Capsula(cabeca, out var baixo, out var alto);
+            return Physics.CheckCapsule(baixo, alto, raioCorpo, MascaraCenario, QueryTriggerInteraction.Ignore);
+        }
+
+        bool Bloqueado(Vector3 cabeca, Vector3 desvio)
+        {
+            // Raio fino na altura do peito, só contra faces da frente: sair do móvel em que
+            // o corpo nasceu (visto por dentro) vale; atravessar outra parede, não.
+            var peito = new Vector3(cabeca.x, cameraRig.position.y + 1.1f, cabeca.z);
+            var antes = Physics.queriesHitBackfaces;
+            Physics.queriesHitBackfaces = false;
+            var bateu = Physics.Raycast(peito, desvio.normalized, desvio.magnitude, MascaraCenario, QueryTriggerInteraction.Ignore);
+            Physics.queriesHitBackfaces = antes;
+            return bateu;
         }
 
         /// <summary>QA: anda até um ponto do chão na velocidade de um visitante.</summary>
@@ -88,6 +148,7 @@ namespace TrilhaDaInovacao
             if (teclado.tabKey.wasPressedThisFrame) TravarCursor(!cursorTravado);
             if (teclado.escapeKey.wasPressedThisFrame) TravarCursor(false);
             if (teclado.hKey.wasPressedThisFrame) mostrarAjuda = !mostrarAjuda;
+            AjustarVolume(teclado);
 
             if (cursorTravado || mouse.rightButton.isPressed)
             {
@@ -118,7 +179,7 @@ namespace TrilhaDaInovacao
         /// <summary>Move o corpo; ao bater no cenário, desliza ao longo da superfície.</summary>
         void Andar(Vector3 deslocamento)
         {
-            const int mascara = 1 << LayoutTrilha.CamadaCenario;
+            const int mascara = MascaraCenario;
             for (var i = 0; i < 3 && deslocamento.sqrMagnitude > 1e-8f; i++)
             {
                 var cabeca = cameraTransform.position;
@@ -145,6 +206,16 @@ namespace TrilhaDaInovacao
                 var resto = direcao * (distancia - livre);
                 deslocamento = resto - Vector3.Dot(resto, normal) * normal;
             }
+        }
+
+        void AjustarVolume(Keyboard teclado)
+        {
+            var vozes = (teclado.equalsKey.wasPressedThisFrame || teclado.numpadPlusKey.wasPressedThisFrame ? 1 : 0)
+                        - (teclado.minusKey.wasPressedThisFrame || teclado.numpadMinusKey.wasPressedThisFrame ? 1 : 0);
+            var efeitos = (teclado.rightBracketKey.wasPressedThisFrame ? 1 : 0) - (teclado.leftBracketKey.wasPressedThisFrame ? 1 : 0);
+            if (vozes != 0) ConfigAudio.AjustarVozes(vozes);
+            if (efeitos != 0) ConfigAudio.AjustarEfeitos(efeitos);
+            if (vozes != 0 || efeitos != 0) avisoVolumeAte = Time.unscaledTime + 2f;
         }
 
         void Tocar(Mouse mouse)
@@ -181,10 +252,14 @@ namespace TrilhaDaInovacao
                 GUI.Label(new Rect(c.x - 6, c.y - 12, 20, 24), "<b>+</b>", estilo);
             }
 
+            if (Time.unscaledTime < avisoVolumeAte)
+                GUI.Label(new Rect(16, 40, 600, 30),
+                    $"<b>Volume</b>  vozes {Mathf.RoundToInt(ConfigAudio.Vozes * 100f)}% · efeitos {Mathf.RoundToInt(ConfigAudio.Efeitos * 100f)}%", estilo);
+
             if (!mostrarAjuda) return;
-            GUI.Label(new Rect(16, 12, 900, 60),
+            GUI.Label(new Rect(16, 12, 1100, 60),
                 "<b>Modo desktop</b>  WASD andar · botão direito ou Tab olhar · clique tocar · " +
-                "N pular cena · R reiniciar · H esconder ajuda", estilo);
+                "N pular cena · R reiniciar · − = volume das vozes · [ ] dos efeitos · H esconder ajuda", estilo);
         }
 
 #if UNITY_EDITOR

@@ -57,6 +57,8 @@ Para instalar no óculos (Modo Desenvolvedor e cabo USB), use `Ferramentas/insta
    | Tocar | Clique |
    | Pular cena | N |
    | Reiniciar a visita | R |
+   | Volume das vozes | − e = |
+   | Volume dos efeitos | [ e ] |
    | Calibrar o piso | C |
 
 5. Para gerar os builds pelo editor, use os itens **Trilha da Inovação → 3 · Build Linux / Windows / Quest 2 (APK)**.
@@ -168,6 +170,10 @@ A medição de desempenho vale só no APK, rodando no próprio óculos.
   Para refazer uma fala, rode o setup para gravar o `.asset`, depois `Ferramentas/voz/gerar_vozes.py` (Piper e ffmpeg), e o setup de novo para ligar o áudio.
   Sem o Piper, deixe como está: a legenda aparece sem a voz nova.
 - **Modelos próprios** (telefone, rádio, impressora, drone, foguete, console e radar CUPRI e outros) são scripts Blender em `Ferramentas/blender/*.py`, que exportam FBX para `Assets/TrilhaDaInovacao/Modelos/`.
+  - O robô guia é `robo_guia.py` (`Modelos/Robo/`), um drone flutuante: objetos `Corpo`, `Cabeca` (cúpula, origem na base dela), `Luz` (olhos), `Jatos` e `Laranja`; o construtor troca os três últimos por materiais emissivos.
+  - Os figurantes (pesquisador, empreendedora, estudante de muletas e engenheiro) são `personagens.py` (`Modelos/Personagens/`).
+    O rig tem os ossos `head`, `torso`, `arm-*` e `arm-*-lower` e os clipes `idle`, `interact-right/left` e `emote-yes/no`, que o `Figurante` usa.
+    Os clipes saem como faixas NLA para a "take" do FBX ter só o nome do clipe; com `bake_anim_use_all_actions` viria `Armature|idle` e o `Figurante` não acharia.
   Para refazer um, rode `blender -b -P Ferramentas/blender/<script>.py`.
 - **Orçamento do Quest 2:** até ~100 draw calls por cena.
   O setup mescla os renderers estáticos.

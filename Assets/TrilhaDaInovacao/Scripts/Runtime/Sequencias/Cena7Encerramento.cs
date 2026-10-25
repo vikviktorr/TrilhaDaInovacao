@@ -10,10 +10,13 @@ namespace TrilhaDaInovacao
         public GameObject creditos;
         public GameObject botaoComecar;
         public AudioSource sons;
+        [Tooltip("Painel de volume da abertura: escondido no fim (poupa ~30 draw calls perto dos créditos).")]
+        public GameObject painelVolume;
 
         protected override IEnumerator Rodar()
         {
             Mostrar(botaoComecar, false);
+            Mostrar(painelVolume, false);
             linhaDoTempo.ApagarTodos();
             ctx.Enquadrar(linhaDoTempo.transform.position);
             var acender = StartCoroutine(linhaDoTempo.AcenderPontos(0.45f, sons));

@@ -17,10 +17,13 @@ MonoBehaviour:
   tempoPrevisto: 35
   fonte: "TELMA ativou a central Tr\xF3pico-R em S\xE3o Lu\xEDs em 1986, apontada
     como a primeira central de comuta\xE7\xE3o totalmente digitalizada do Brasil
-    (HOLANDA, 1996)."
+    (HOLANDA, 1996). Tr\xF3pico R da PHT, 1.008 terminais, opera\xE7\xE3o comercial
+    em 13/11/1986 (Telebrasil, nov./dez. 1986); esta\xE7\xE3o Telma-1, prefixo 232
+    (Telebrasil, jan./fev. 1987)."
   falas:
   - id: intro
-    texto: "S\xE3o Lu\xEDs, 1986. A TELMA acaba de ativar a central Tr\xF3pico-R."
+    texto: "S\xE3o Lu\xEDs, novembro de 1986. A TELMA p\xF5e em opera\xE7\xE3o a
+      central Tr\xF3pico-R, com 1.008 terminais."
     audio: {fileID: 8300000, guid: 5101f93591f6d7213b3cd387707cea46, type: 3}
     duracao: 0
   - id: primeira

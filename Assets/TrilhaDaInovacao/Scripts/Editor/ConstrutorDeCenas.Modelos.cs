@@ -99,7 +99,7 @@ namespace TrilhaDaInovacao.EditorTools
         /// animações (idle, walk, interact-right, emote-yes...) e tocamos uma em loop.
         /// </summary>
         /// <summary>
-        /// Personagem animado (mini-characters) de pé em <paramref name="posicaoLocal"/>,
+        /// Personagem animado (Modelos/Personagens ou mini-characters) de pé em <paramref name="posicaoLocal"/>,
         /// com <paramref name="altura"/> metros e um <see cref="Figurante"/> que alterna
         /// repouso e <paramref name="gestos"/>. Os bounds do SkinnedMeshRenderer não
         /// acompanham o corpo posado (o <see cref="Modelo"/> o deixava com ~1 m e
@@ -228,6 +228,28 @@ namespace TrilhaDaInovacao.EditorTools
 
             go.AddComponent<ApoioMuletas>().ConfigurarNoEditor(ossos[Osso("arm-left")], ossos[Osso("arm-right")],
                 ossos[Osso("torso")], pontas[0], pontas[1], chao);
+        }
+
+        /// <summary>
+        /// Muletas da estudante feita no Blender: já vêm modeladas, presas ao
+        /// antebraço, com a ponteira marcada pelos ossos "muleta-ponta-*". O
+        /// <see cref="ApoioMuletas"/> gira cada braço até a ponteira tocar o chão.
+        /// </summary>
+        static void PrepararMuletasProprias(GameObject go, float chao)
+        {
+            Transform Osso(string nome) => go.GetComponentsInChildren<Transform>().FirstOrDefault(t => t.name == nome);
+            var esquerdo = Osso("arm-left");
+            var direito = Osso("arm-right");
+            var pontaEsq = Osso("muleta-ponta-left");
+            var pontaDir = Osso("muleta-ponta-right");
+            if (esquerdo == null || direito == null || pontaEsq == null || pontaDir == null)
+            {
+                Debug.LogWarning("[Trilha da Inovação] Estudante sem os ossos das muletas; refaça Ferramentas/blender/personagens.py.");
+                return;
+            }
+
+            go.AddComponent<ApoioMuletas>().ConfigurarNoEditor(esquerdo, direito, Osso("torso"),
+                esquerdo.InverseTransformPoint(pontaEsq.position), direito.InverseTransformPoint(pontaDir.position), chao);
         }
 
         /// <summary>Bounds, no espaço do pai, das malhas com skin na pose atual.</summary>
@@ -629,18 +651,45 @@ namespace TrilhaDaInovacao.EditorTools
         static void Decorar1986(Transform q)
         {
             const string f = "Kenney/furniture-kit/";
-            // Parede esquerda (face em x = -4,35), de trás para a frente: estante,
-            // console de operação e a cadeira de frente para ele.
-            Modelo("Kenney/space-kit/desk_computer", q, new Vector3(-3.99f, 0f, 2.0f), 90f, 1.6f, Medida.MaiorLado);
-            Modelo(f + "chairDesk", q, new Vector3(-3.3f, 0f, 2.0f), -90f, 0.95f);
-            Modelo(f + "bookcaseClosedWide", q, new Vector3(-4.04f, 0f, -0.3f), 90f, 1.9f);
+            // Parede esquerda (face em x = -4,35), da frente para o fundo: quadro de avisos,
+            // o posto de operação e manutenção da central e o distribuidor geral (DG), com
+            // modelos de Ferramentas/blender/central_tropico.py.
+            // Acabamento de sala de trabalho (Ferramentas/blender/sala_telma.py): portas, janela com
+            // persiana, bancada de manutenção, armário, quadro de avisos, relógio, extintor, arquivo
+            // de aço com calendário e bebedouro. Já vem nas coordenadas da sala; com giro de 180°,
+            // escala 1 e origem no quadro.
+            var sala = Modelo("Telma/sala-telma", q, Vector3.zero, 180f, 1f);
+            if (sala != null)
+            {
+                sala.transform.localScale = Vector3.one;
+                sala.transform.localPosition = Vector3.zero;
+                var letreiro = Color.white;
+                Texto("Letreiro sala de energia", q, new Vector3(2.1f, 2.38f, 6.42f), "SALA DE ENERGIA · 48 V", 0.11f, 1.35f, letreiro);
+                Texto("Letreiro saída lateral", q, new Vector3(5.52f, 2.32f, -1.3f), "SAÍDA", 0.1f, 0.48f, letreiro)
+                    .transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                Texto("Letreiro saída", q, new Vector3(-2.4f, 2.32f, -2.42f), "SAÍDA", 0.1f, 0.48f, letreiro)
+                    .transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+                Texto("Escala de plantão", q, new Vector3(-4.31f, 1.8f, -1.8f), "ESCALA DE PLANTÃO", 0.034f, 0.5f, new Color(0.1f, 0.1f, 0.15f))
+                    .transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+                Texto("Proibido fumar", q, new Vector3(3.5f, 1.45f, 6.42f), "PROIBIDO\nFUMAR", 0.04f, 0.24f, Color.white);
+            }
+
+            Modelo("Telma/posto-om", q, new Vector3(-3.98f, 0f, 1.6f), 90f, 1.4f, Medida.MaiorLado);
+            Modelo(f + "chairDesk", q, new Vector3(-3.24f, 0f, 2.4f), -60f, 0.95f);
+            Modelo("Telma/distribuidor-geral", q, new Vector3(-4.22f, 0f, 4.4f), 90f, 2.2f);
+            // Gente trabalhando: o técnico digita um comando no terminal (o teclado fica
+            // 0,28 m antes do centro da mesa) e a técnica testa um par no DG com o monofone.
+            var tecnico = Personagem("Personagens/tecnico-telma", q, new Vector3(-3.42f, 0f, 1.32f), -90f, 1.72f, "interact-right");
+            if (tecnico != null) tecnico.olharVisitante = false;
+            var tecnica = Personagem("Personagens/tecnica-telma", q, new Vector3(-3.55f, 0f, 4.1f), -90f, 1.63f, "interact-right");
+            if (tecnica != null) tecnica.olharVisitante = false;
             Modelo(f + "coatRackStanding", q, new Vector3(-4.0f, 0f, 5.9f), 0f, 1.75f);
             // Rádio retrô (Ferramentas/blender/radio_retro.py), 1:1: 30,6 cm de largura com a antena.
             // Os bounds incluem a antena, que avança 2,3 cm para a esquerda: o gabinete
             // fica em x 0,08…0,34, no balcão e longe do fio do telefone.
             Modelo("Radio/radio-retro", q, new Vector3(0.187f, 0.88f, 0.85f), 180f, 0.306f, Medida.Largura);
             // Parede direita (face em x = 5,55).
-            Modelo(f + "televisionVintage", q, new Vector3(5.15f, 0f, 0.6f), -90f, 0.75f);
+            // Caixas de placas sobressalentes da central.
             Modelo(f + "cardboardBoxClosed", q, new Vector3(5.1f, 0f, 5.8f), 15f, 0.5f);
             Modelo(f + "cardboardBoxOpen", q, new Vector3(5.15f, 0f, 5.1f), -10f, 0.45f);
             Modelo(f + "trashcan", q, new Vector3(0.55f, 0f, 0.85f), 0f, 0.35f);
@@ -749,18 +798,18 @@ namespace TrilhaDaInovacao.EditorTools
         static (Figurante estudante, Figurante pesquisador, Figurante empreendedora) Decorar2018(Transform q)
         {
             const string f = "Kenney/furniture-kit/";
-            const string c = "Kenney/mini-characters/";
+            const string c = "Personagens/";
             // Pessoas com uma tarefa cada, longe dos móveis: colando post-its na parede
             // de ideias, operando a cortadora a laser (de lado para o visitante) e
             // conferindo o notebook, que comenta com o visitante de vez em quando.
             // A estudante usa muletas: fica apoiada nelas e só acena com a cabeça.
             var posPostIts = new Vector3(-2.1f, 0f, 2.9f);
-            var postIts = Personagem(c + "character-female-a", q, posPostIts, 165f, 1.62f,
-                go => PrepararMuletas(go, q.TransformPoint(posPostIts).y), "emote-yes");
+            var postIts = Personagem(c + "estudante", q, posPostIts, 165f, 1.62f,
+                go => PrepararMuletasProprias(go, q.TransformPoint(posPostIts).y), "emote-yes");
             postIts.intervalo = new Vector2(4f, 9f);
-            var laser = Personagem(c + "character-male-b", q, new Vector3(2.85f, 0f, 3.3f), 90f, 1.72f, "interact-right", "interact-left");
+            var laser = Personagem(c + "pesquisador", q, new Vector3(2.85f, 0f, 3.3f), 90f, 1.72f, "interact-right", "interact-left");
             laser.intervalo = new Vector2(2f, 5f);
-            var notebook = Personagem(c + "character-female-c", q, new Vector3(-3.2f, 0f, 1.5f), -150f, 1.6f, "emote-yes", "emote-no");
+            var notebook = Personagem(c + "empreendedora", q, new Vector3(-3.2f, 0f, 1.5f), -150f, 1.66f, "emote-yes", "emote-no");
             DarVoz(postIts, "Estudante");
             DarVoz(laser, "Pesquisador");
             DarVoz(notebook, "Empreendedora");

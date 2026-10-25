@@ -16,8 +16,8 @@ MonoBehaviour:
   ano: 2022
   tempoPrevisto: 35
   fonte: "Anatel autorizou esta\xE7\xF5es na faixa de 3,5 GHz em S\xE3o Lu\xEDs a
-    partir de 19 set. 2022 (ANATEL, 2022). PENDENTE: valores e fonte da compara\xE7\xE3o
-    3G/4G/5G."
+    partir de 19 set. 2022 (ANATEL, 2022). Bairros com sinal no lan\xE7amento: TIM
+    25 (43,9% da popula\xE7\xE3o), Claro 9, Vivo 7 (Jornal Pequeno, 19 set. 2022)."
   falas:
   - id: intro
     texto: "S\xE3o Lu\xEDs, setembro de 2022. O 5G chega \xE0 cidade."

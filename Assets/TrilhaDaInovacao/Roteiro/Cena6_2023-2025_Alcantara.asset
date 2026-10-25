@@ -14,11 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   titulo: "Lan\xE7amentos em Alc\xE2ntara"
   ano: 2023
-  tempoPrevisto: 75
+  tempoPrevisto: 125
   fonte: "HANBIT-TLV (Innospace) levou o SISNAV em 2023 (AEB, 2024). HANBIT-Nano,
-    2025: primeiro lan\xE7amento comercial do Brasil, com o PION-BR2 (UFMA); anomalia
-    e perda da miss\xE3o (AEB, 2026); causa: vazamento na veda\xE7\xE3o da c\xE2mara
-    de combust\xE3o do 1\xBA est\xE1gio aos 33 s de voo (Innospace e CENIPA, 2026)."
+    22/12/2025, 22h13: primeiro lan\xE7amento comercial do Brasil, com o PION-BR2
+    (UFMA). Subida normal por ~30 s; aos 33 s, vazamento na veda\xE7\xE3o da c\xE2mara
+    de combust\xE3o do 1\xBA est\xE1gio, que rompeu (Innospace, AEB e CENIPA, 2026);
+    sem empuxo, o foguete se partiu em 3 ou 4 partes e explodiu ao cair na zona de
+    seguran\xE7a do CLA (Innospace; FAB)."
   falas:
   - id: intro2023
     texto: "2023. O foguete HANBIT-TLV, da Innospace, sai de Alc\xE2ntara."
@@ -68,8 +70,8 @@ MonoBehaviour:
     audio: {fileID: 8300000, guid: a9246fcd1b8034ac7a43c7345d627124, type: 3}
     duracao: 0
   - id: causa3
-    texto: "O sistema de seguran\xE7a destruiu o foguete no ar, para proteger quem
-      estava em solo."
+    texto: "Sem empuxo, o foguete se partiu em peda\xE7os, que explodiram ao cair
+      dentro do CLA."
     audio: {fileID: 8300000, guid: b17e7c050c5b6c352a7d5df48163afef, type: 3}
     duracao: 0
   - id: investigacao
@@ -80,4 +82,12 @@ MonoBehaviour:
   - id: licao
     texto: Agora, a montagem do motor tem mais controle e testes.
     audio: {fileID: 8300000, guid: 3e9ea619bb62467f2b79de6110928893, type: 3}
+    duracao: 0
+  - id: anomalia
+    texto: "Aos 33 segundos, um clar\xE3o dentro das nuvens. Algo deu errado!"
+    audio: {fileID: 8300000, guid: 8b62f7c9f6ed37e41b901e819b698607, type: 3}
+    duracao: 0
+  - id: queda
+    texto: "Os peda\xE7os est\xE3o caindo na zona de seguran\xE7a, longe das pessoas."
+    audio: {fileID: 8300000, guid: ae437451b801715c9932da5db8ab441e, type: 3}
     duracao: 0

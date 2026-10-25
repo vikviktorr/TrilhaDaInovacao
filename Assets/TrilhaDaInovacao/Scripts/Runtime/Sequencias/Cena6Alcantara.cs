@@ -6,7 +6,8 @@ namespace TrilhaDaInovacao
     /// <summary>
     /// Cena 6 — 2023 a 2025, lançamentos em Alcântara (3:20–4:20).
     /// Parte A: interior do HANBIT-TLV com o SISNAV (2023).
-    /// Parte B: plataforma do HANBIT-Nano, contagem, decolagem e resultado (2025).
+    /// Parte B: plataforma do HANBIT-Nano, contagem e o voo de 22/12/2025 como foi:
+    /// ruptura aos 33 s, queda em pedaços e explosão na zona de segurança (ver <see cref="Decolagem"/>).
     /// </summary>
     public class Cena6Alcantara : EraSequence
     {
@@ -59,11 +60,29 @@ namespace TrilhaDaInovacao
             ctx.Som("sirene", 0.5f);
             yield return Dizer("decolar");
 
+            decolagem.Escala = ctx.Tour && !ctx.QA ? 6f : 1f;
             yield return Contagem();
+
+            // O voo real: subida, nuvens, Max-Q, ruptura aos 33 s, queda e explosão no solo.
+            var fase = Decolagem.Fase.Subindo;
+            var voo = StartCoroutine(decolagem.Voar(f => fase = f));
+            StartCoroutine(Placar());
             StartCoroutine(AcompanharNoTour());
             StartCoroutine(CapturarDepois("2025-decolagem", 2.2f));
-            StartCoroutine(CapturarDepois("2025-explosao", 5.1f));
-            yield return decolagem.SubirEExplodir(4.5f, 3.5f);
+
+            while (fase < Decolagem.Fase.Anomalia) yield return null;
+            StartCoroutine(CapturarDepois("2025-anomalia", 0.2f));
+            StartCoroutine(Dizer("anomalia"));
+
+            while (fase < Decolagem.Fase.Caindo) yield return null;
+            yield return Esperar(ctx.Tour && !ctx.QA ? 0.5f : 5f);
+            StartCoroutine(Dizer("queda"));
+
+            while (fase < Decolagem.Fase.Impacto) yield return null;
+            ctx.Enquadrar(decolagem.PontoDaExplosao);
+            yield return null;
+            ctx.Capturar("2025-explosao");
+            yield return voo;
             ctx.Enquadrar(decolagem.PontoDaExplosao);
 
             yield return Dizer("resultado");
@@ -117,11 +136,29 @@ namespace TrilhaDaInovacao
 
         IEnumerator AcompanharNoTour()
         {
-            while (decolagem.foguete.gameObject.activeSelf)
+            while (decolagem.Estado != Decolagem.Fase.Fim && decolagem.Estado != Decolagem.Fase.Parado)
             {
-                ctx.Enquadrar(decolagem.foguete.position);
+                ctx.Enquadrar(decolagem.PontoAtual);
                 yield return null;
             }
+        }
+
+        /// <summary>
+        /// Relógio da missão como na transmissão: T+ em tempo real, "MAX-Q" aos 30 s e,
+        /// na ruptura, "ANOMALIA EM VOO", com o relógio parado no último dado recebido.
+        /// </summary>
+        IEnumerator Placar()
+        {
+            if (relogio == null) yield break;
+            while (decolagem.Estado == Decolagem.Fase.Subindo)
+            {
+                var t = decolagem.TempoDeVoo;
+                var aviso = t >= decolagem.tempoMaxQ ? "\n<size=35%>MAX-Q</size>" : "";
+                relogio.text = $"T+00:{Mathf.FloorToInt(t):00}{aviso}";
+                yield return null;
+            }
+
+            relogio.text = $"T+00:{Mathf.FloorToInt(decolagem.tempoRuptura):00}\n<size=35%>ANOMALIA EM VOO</size>";
         }
 
         public override void AoInterromper()

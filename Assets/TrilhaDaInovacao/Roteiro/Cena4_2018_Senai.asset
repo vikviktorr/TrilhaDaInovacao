@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   titulo: "Laborat\xF3rio Aberto do SENAI"
   ano: 2018
-  tempoPrevisto: 35
+  tempoPrevisto: 45
   fonte: "SENAI inaugurou o Laborat\xF3rio Aberto em S\xE3o Lu\xEDs em 2 de mar\xE7o
     de 2018 (FIEMA, 2018)."
   falas:
@@ -28,7 +28,7 @@ MonoBehaviour:
     audio: {fileID: 8300000, guid: f54c95887bca0e9d78192cb7850ce90a, type: 3}
     duracao: 0
   - id: dica
-    texto: "Encoste a m\xE3o na l\xE2mpada sobre a bancada."
+    texto: "Toque na tela do computador para desenhar a pe\xE7a."
     audio: {fileID: 8300000, guid: d0637514de0c8d861a349cd3fa92b829, type: 3}
     duracao: 0
   - id: ideia
@@ -50,4 +50,9 @@ MonoBehaviour:
   - id: empreendedora
     texto: "Com o prot\xF3tipo pronto, d\xE1 para testar e virar neg\xF3cio!"
     audio: {fileID: 8300000, guid: 84bf29f0191af2426aa8e26896e32176, type: 3}
+    duracao: 0
+  - id: dica-impressora
+    texto: "O desenho est\xE1 pronto. Aperte o bot\xE3o no painel da impressora para
+      imprimir."
+    audio: {fileID: 8300000, guid: 2e626f3c964640cbb87b9351db212bee, type: 3}
     duracao: 0

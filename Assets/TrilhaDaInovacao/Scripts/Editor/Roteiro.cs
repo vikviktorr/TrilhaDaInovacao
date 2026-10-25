@@ -32,7 +32,17 @@ namespace TrilhaDaInovacao.EditorTools
                 "O lançamento aconteceu, mas uma anomalia levou à perda da missão."),
             ("contagem", "Five, four, three, two, one", "Cinco, quatro, três, dois, um"),
             ("siga", "Siga a luz no chão até a primeira marca.", "Um portal vai se abrir. Ele leva para 1986."),
-            ("dica", "Dê um passo até a marca do radar no chão.", "Toque no botão vermelho do console para ligar o radar.")
+            ("dica", "Dê um passo até a marca do radar no chão.", "Toque no botão vermelho do console para ligar o radar."),
+            // O foguete não foi destruído no ar: caiu em pedaços e explodiu no solo (Innospace, FAB).
+            // A rede metropolitana tinha 10 Gbit/s; 1 Gbps era a meta do link do IFMA para 2010 (IFMA, 2009).
+            ("numeros", "São 43 quilômetros de fibra óptica ligando seis instituições a 1 Gbps.",
+                "São 43 quilômetros de fibra óptica, a 10 Gbps, ligando seis instituições."),
+            // Telebrasil (nov./dez. 1986): operação comercial em 13 de novembro, com 1.008 terminais.
+            ("intro", "São Luís, 1986. A TELMA acaba de ativar a central Trópico-R.",
+                "São Luís, novembro de 1986. A TELMA põe em operação a central Trópico-R, com 1.008 terminais."),
+            // A lâmpada saiu da bancada: o desenho começa pela tela do computador.
+            ("dica", "Encoste a mão na lâmpada sobre a bancada.", "Toque na tela do computador para desenhar a peça."),
+            ("causa3", "O sistema de segurança destruiu o foguete no ar, para proteger quem estava em solo.", "Sem empuxo, o foguete se partiu em pedaços, que explodiram ao cair dentro do CLA.")
         };
 
         public static Dictionary<string, SceneScript> CriarOuAtualizar()
@@ -60,7 +70,8 @@ namespace TrilhaDaInovacao.EditorTools
 
                 [Nomes[1]] = Garantir(Nomes[1], "Central Trópico-R da TELMA", "1986", 35f,
                     "TELMA ativou a central Trópico-R em São Luís em 1986, apontada como a primeira " +
-                    "central de comutação totalmente digitalizada do Brasil (HOLANDA, 1996).", new[]
+                    "central de comutação totalmente digitalizada do Brasil (HOLANDA, 1996). Trópico R da PHT, 1.008 terminais, " +
+                    "operação comercial em 13/11/1986 (Telebrasil, nov./dez. 1986); estação Telma-1, prefixo 232 (Telebrasil, jan./fev. 1987).", new[]
                     {
                         ("intro", "São Luís, 1986. A TELMA acaba de ativar a central Trópico-R."),
                         ("primeira", "Ela foi apontada como a primeira central de comutação totalmente digitalizada do Brasil."),
@@ -81,8 +92,8 @@ namespace TrilhaDaInovacao.EditorTools
                     }),
 
                 [Nomes[3]] = Garantir(Nomes[3], "Rede Metropolitana de São Luís", "2009", 35f,
-                    "RNP: rede de fibra óptica de 43 km conectando seis instituições a 1 Gbps (RNP, 2009). " +
-                    "PENDENTE: nomes das seis instituições para rotular os pinos.", new[]
+                    "RNP/Redecomep: em operação desde 23/10/2009, 43 km de fibra óptica a 10 Gbit/s ligando seis " +
+                    "instituições: CLA, FAPEMA, IFMA, SEATI, UEMA e UFMA (IFMA, 2009; RNP, 2009).", new[]
                     {
                         ("intro", "São Luís, 2009. A RNP inaugura a Rede Metropolitana da cidade."),
                         ("numeros", "São 43 quilômetros de fibra óptica ligando seis instituições a 1 Gbps."),
@@ -91,7 +102,7 @@ namespace TrilhaDaInovacao.EditorTools
                         ("fim", "Com a rede pronta, as ideias circulam. Vamos ver uma delas virar objeto.")
                     }),
 
-                [Nomes[4]] = Garantir(Nomes[4], "Laboratório Aberto do SENAI", "2018", 35f,
+                [Nomes[4]] = Garantir(Nomes[4], "Laboratório Aberto do SENAI", "2018", 45f,
                     "SENAI inaugurou o Laboratório Aberto em São Luís em 2 de março de 2018 (FIEMA, 2018).", new[]
                     {
                         ("intro", "2 de março de 2018. O SENAI inaugura seu primeiro Laboratório Aberto no Maranhão."),
@@ -100,13 +111,15 @@ namespace TrilhaDaInovacao.EditorTools
                         ("dica", "Encoste a mão na lâmpada sobre a bancada."),
                         ("ideia", "Aqui, uma ideia pode ganhar forma de protótipo."),
                         ("pesquisador", "A impressora 3D monta a peça camada por camada."),
+                        ("dica-impressora", "O desenho está pronto. Aperte o botão no painel da impressora para imprimir."),
                         ("empreendedora", "Com o protótipo pronto, dá para testar e virar negócio!"),
                         ("fim", "Pronto! Agora, vamos acelerar a conexão da cidade.")
                     }),
 
                 [Nomes[5]] = Garantir(Nomes[5], "5G em São Luís", "2022", 35f,
                     "Anatel autorizou estações na faixa de 3,5 GHz em São Luís a partir de 19 set. 2022 " +
-                    "(ANATEL, 2022). PENDENTE: valores e fonte da comparação 3G/4G/5G.", new[]
+                    "(ANATEL, 2022). Bairros com sinal no lançamento: TIM 25 (43,9% da população), Claro 9, Vivo 7 " +
+                    "(Jornal Pequeno, 19 set. 2022).", new[]
                     {
                         ("intro", "São Luís, setembro de 2022. O 5G chega à cidade."),
                         ("dica", "Aproxime-se da torre."),
@@ -115,10 +128,11 @@ namespace TrilhaDaInovacao.EditorTools
                         ("fim", "Agora, a última parada: de volta a Alcântara.")
                     }),
 
-                [Nomes[6]] = Garantir(Nomes[6], "Lançamentos em Alcântara", "2023", 75f,
-                    "HANBIT-TLV (Innospace) levou o SISNAV em 2023 (AEB, 2024). HANBIT-Nano, 2025: primeiro " +
-                    "lançamento comercial do Brasil, com o PION-BR2 (UFMA); anomalia e perda da missão (AEB, 2026); causa: vazamento " +
-                    "na vedação da câmara de combustão do 1º estágio aos 33 s de voo (Innospace e CENIPA, 2026).", new[]
+                [Nomes[6]] = Garantir(Nomes[6], "Lançamentos em Alcântara", "2023", 125f,
+                    "HANBIT-TLV (Innospace) levou o SISNAV em 2023 (AEB, 2024). HANBIT-Nano, 22/12/2025, 22h13: primeiro " +
+                    "lançamento comercial do Brasil, com o PION-BR2 (UFMA). Subida normal por ~30 s; aos 33 s, vazamento na vedação " +
+                    "da câmara de combustão do 1º estágio, que rompeu (Innospace, AEB e CENIPA, 2026); sem empuxo, o foguete se partiu " +
+                    "em 3 ou 4 partes e explodiu ao cair na zona de segurança do CLA (Innospace; FAB).", new[]
                     {
                         ("intro2023", "2023. O foguete HANBIT-TLV, da Innospace, sai de Alcântara."),
                         ("sisnav", "Dentro dele, o SISNAV, sistema brasileiro de navegação, foi levado para testes."),
@@ -126,6 +140,8 @@ namespace TrilhaDaInovacao.EditorTools
                         ("pion", "Entre as cargas está o PION-BR2, ligado à UFMA..."),
                         ("decolar", "Nossa, o foguete vai decolar agora!"),
                         ("contagem", "Cinco, quatro, três, dois, um"),
+                        ("anomalia", "Aos 33 segundos, um clarão dentro das nuvens. Algo deu errado!"),
+                        ("queda", "Os pedaços estão caindo na zona de segurança, longe das pessoas."),
                         ("resultado", "O lançamento aconteceu, mas uma anomalia levou à perda da missão."),
                         ("causa", "Aos 33 segundos de voo, uma vedação do motor do primeiro estágio falhou."),
                         ("causa2", "O gás quente vazou e a câmara de combustão rompeu."),

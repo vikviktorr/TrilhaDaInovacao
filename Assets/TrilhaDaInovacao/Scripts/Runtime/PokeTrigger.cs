@@ -17,6 +17,8 @@ namespace TrilhaDaInovacao
         [SerializeField, Min(0.01f)] float distanciaBrilho = 0.2f;
         [SerializeField, Min(0.001f)] float distanciaToque = 0.025f;
         [SerializeField, Min(0f)] float intervalo = 0.6f;
+        [SerializeField, Tooltip("Pulsar até o primeiro toque (desligado em controles como o volume).")]
+        bool chamarAtencao = true;
 
         static readonly int Emissao = Shader.PropertyToID("_EmissionColor");
 
@@ -55,7 +57,7 @@ namespace TrilhaDaInovacao
         public void Ativar()
         {
             Ativo = true;
-            aguardando = true;
+            aguardando = chamarAtencao;
         }
 
         public void Desativar()
@@ -107,10 +109,11 @@ namespace TrilhaDaInovacao
         }
 
 #if UNITY_EDITOR
-        public void ConfigurarNoEditor(Renderer[] renderers, Color cor)
+        public void ConfigurarNoEditor(Renderer[] renderers, Color cor, bool pulsar = true)
         {
             destaque = renderers;
             corBrilho = cor;
+            chamarAtencao = pulsar;
         }
 #endif
     }

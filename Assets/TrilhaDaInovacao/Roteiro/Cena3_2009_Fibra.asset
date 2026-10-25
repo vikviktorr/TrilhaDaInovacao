@@ -15,17 +15,17 @@ MonoBehaviour:
   titulo: "Rede Metropolitana de S\xE3o Lu\xEDs"
   ano: 2009
   tempoPrevisto: 35
-  fonte: "RNP: rede de fibra \xF3ptica de 43 km conectando seis institui\xE7\xF5es
-    a 1 Gbps (RNP, 2009). PENDENTE: nomes das seis institui\xE7\xF5es para rotular
-    os pinos."
+  fonte: "RNP/Redecomep: em opera\xE7\xE3o desde 23/10/2009, 43 km de fibra \xF3ptica
+    a 10 Gbit/s ligando seis institui\xE7\xF5es: CLA, FAPEMA, IFMA, SEATI, UEMA e
+    UFMA (IFMA, 2009; RNP, 2009)."
   falas:
   - id: intro
     texto: "S\xE3o Lu\xEDs, 2009. A RNP inaugura a Rede Metropolitana da cidade."
     audio: {fileID: 8300000, guid: b3bfccb180daa6802bdcf7e3707afe1a, type: 3}
     duracao: 0
   - id: numeros
-    texto: "S\xE3o 43 quil\xF4metros de fibra \xF3ptica ligando seis institui\xE7\xF5es
-      a 1 Gbps."
+    texto: "S\xE3o 43 quil\xF4metros de fibra \xF3ptica, a 10 Gbps, ligando seis
+      institui\xE7\xF5es."
     audio: {fileID: 8300000, guid: 225868dd77179d0838c29004a5c620c9, type: 3}
     duracao: 0
   - id: dica

@@ -170,12 +170,43 @@ namespace TrilhaDaInovacao.EditorTools
                 "Tracking State", InputActionType.Value, "<XRHMD>/trackingState", expectedControlType: "Integer"));
         }
 
-        /// <summary>O guia: um robô flutuante simples, feito de primitivas.</summary>
+        /// <summary>
+        /// O guia: robô flutuante feito no Blender (Ferramentas/blender/robo_guia.py).
+        /// O corpo inteiro balança; a cabeça pulsa e as lentes acendem quando ele fala.
+        /// Sem o FBX, volta ao robô de primitivas.
+        /// </summary>
         static GuideCharacter MontarGuia()
         {
             var raiz = new GameObject("Guia");
             var corpo = new GameObject("Corpo").transform;
             corpo.SetParent(raiz.transform, false);
+
+            // O drone (0,7 m) flutua com a ponta dos propulsores a 0,93 m do chão: os olhos
+            // chegam a ~1,45 m, a altura de uma conversa confortável com um adulto de pé.
+            var robo = Modelo("Robo/robo-guia", corpo, new Vector3(0f, 0.93f, 0f), 0f, 0.7f);
+            var cabecaRobo = robo != null ? robo.transform.Find("Cabeca") : null;
+            var luzRobo = robo != null ? robo.transform.Find("Luz") : null;
+            if (cabecaRobo != null && luzRobo != null)
+            {
+                luzRobo.SetParent(cabecaRobo, true);
+                var lente = luzRobo.GetComponent<Renderer>();
+                lente.sharedMaterial = Opaco("GuiaLente", new Color(0.4f, 0.95f, 1f), new Color(0.35f, 0.9f, 1f) * 1.6f);
+                var jatos = robo.transform.Find("Jatos");
+                if (jatos != null)
+                    jatos.GetComponent<Renderer>().sharedMaterial =
+                        Opaco("GuiaJato", new Color(0.3f, 0.7f, 1f), new Color(0.25f, 0.6f, 1f) * 2f);
+                var laranja = robo.transform.Find("Laranja");
+                if (laranja != null)
+                    laranja.GetComponent<Renderer>().sharedMaterial =
+                        Opaco("GuiaLaranja", new Color(1f, 0.42f, 0.08f), new Color(1f, 0.4f, 0.05f) * 1.2f);
+                raiz.AddComponent<AudioSource>();
+                var guiaRobo = raiz.AddComponent<GuideCharacter>();
+                guiaRobo.ConfigurarNoEditor(corpo, cabecaRobo, lente);
+                return guiaRobo;
+            }
+
+            if (robo != null) Object.DestroyImmediate(robo);
+            Debug.LogWarning("[Trilha da Inovação] robo-guia.fbx sem Cabeca/Luz; usando o guia de primitivas.");
 
             var casco = Opaco("GuiaCasco", new Color(0.92f, 0.94f, 0.97f), smooth: 0.6f);
             var detalhe = Opaco("GuiaDetalhe", new Color(0.12f, 0.35f, 0.75f));
@@ -474,6 +505,8 @@ namespace TrilhaDaInovacao.EditorTools
             var botao = BotaoDeToque("Botão Começar", null, LayoutTrilha.Local(0, -0.05f, 0f, 0.55f),
                 LayoutTrilha.Orientacao(0), "COMEÇAR", new Color(0.1f, 0.65f, 0.35f));
 
+            var painelVolume = MontarPainelVolume();
+
             // Créditos, perto da marca 6 (onde a visita termina).
             var creditos = new GameObject("Créditos");
             creditos.transform.position = LayoutTrilha.Local(6, -0.7f, 1.5f, 1.2f);
@@ -494,6 +527,7 @@ namespace TrilhaDaInovacao.EditorTools
             abertura.linhaDoTempo = linhaDoTempo;
             abertura.botaoComecar = botao;
             abertura.creditos = creditos;
+            abertura.painelVolume = painelVolume;
 
             // No encerramento o guia fica de lado, sem cobrir os créditos.
             var encerramento = Sequencia<Cena7Encerramento>("Cena 7 · Encerramento", 7, 6, LayoutTrilha.Local(6, -1.15f, 0f, 0.6f));
@@ -501,8 +535,83 @@ namespace TrilhaDaInovacao.EditorTools
             encerramento.creditos = creditos;
             encerramento.botaoComecar = botao.gameObject;
             encerramento.sons = sons;
+            encerramento.painelVolume = painelVolume;
 
             return Salvar(cena, LayoutTrilha.CenaHub);
+        }
+
+        /// <summary>
+        /// Painel de volume (vozes e efeitos) ao alcance da mão esquerda de quem está na
+        /// marca de início, longe do caminho até 1986 e dentro da área livre: um tampo
+        /// inclinado com botões − e + (toque de 15 cm) e uma barra de 10 segmentos por linha.
+        /// </summary>
+        static GameObject MontarPainelVolume()
+        {
+            var raiz = new GameObject("Painel de volume").transform;
+            var posicao = LayoutTrilha.Local(0, -0.38f, 0f, 0.1f);
+            var paraFora = posicao - LayoutTrilha.Marcas[0];
+            paraFora.y = 0f;
+            raiz.SetPositionAndRotation(posicao, Quaternion.LookRotation(paraFora.normalized, Vector3.up));
+
+            var metal = Opaco("Pedestal", new Color(0.3f, 0.32f, 0.36f), smooth: 0.5f);
+            var fundo = Opaco("VolumeTampo", new Color(0.06f, 0.1f, 0.2f));
+            Bloco("Pedestal", raiz, new Vector3(0f, 0.47f, 0.05f), new Vector3(0.1f, 0.47f, 0.1f), metal, PrimitiveType.Cylinder);
+
+            // Tampo inclinado 35° para trás: fica de frente para quem olha de cima, de pé.
+            var tampo = new GameObject("Tampo").transform;
+            tampo.SetParent(raiz, false);
+            tampo.localPosition = new Vector3(0f, 1.0f, 0.05f);
+            tampo.localRotation = Quaternion.Euler(35f, 0f, 0f);
+            Bloco("Placa", tampo, new Vector3(0f, 0f, 0.02f), new Vector3(0.64f, 0.44f, 0.03f), fundo);
+            var titulo = Texto("Título", tampo, new Vector3(0f, 0.19f, 0f), "VOLUME", 0.045f, 0.6f, Color.white);
+            titulo.fontStyle = FontStyles.Bold;
+
+            var aceso = Opaco("VolumeAceso", new Color(0.3f, 0.85f, 0.5f), new Color(0.2f, 0.7f, 0.4f));
+            var apagado = Opaco("VolumeApagado", new Color(0.18f, 0.22f, 0.3f));
+
+            (PokeTrigger menos, PokeTrigger mais, Renderer[] barra, TMP_Text valor) Linha(string rotulo, float y, Color cor)
+            {
+                Texto($"Rótulo {rotulo}", tampo, new Vector3(-0.24f, y, 0f), rotulo, 0.03f, 0.15f, Color.white);
+                var m = BotaoVolume($"{rotulo} -", tampo, new Vector3(-0.105f, y, 0f), "-", cor);
+                var M = BotaoVolume($"{rotulo} +", tampo, new Vector3(0.245f, y, 0f), "+", cor);
+                var segmentos = new Renderer[10];
+                for (var i = 0; i < segmentos.Length; i++)
+                    segmentos[i] = Bloco($"Segmento {i + 1}", tampo, new Vector3(-0.02f + i * 0.02f, y + 0.012f, -0.002f),
+                        new Vector3(0.014f, 0.03f, 0.01f), apagado).GetComponent<Renderer>();
+                var v = Texto($"Valor {rotulo}", tampo, new Vector3(0.07f, y - 0.035f, 0f), "", 0.028f, 0.2f, new Color(0.75f, 0.85f, 1f));
+                return (m, M, segmentos, v);
+            }
+
+            var vozes = Linha("VOZES", 0.08f, new Color(0.25f, 0.55f, 0.95f));
+            var efeitos = Linha("EFEITOS", -0.1f, new Color(0.95f, 0.6f, 0.2f));
+
+            var fonteVoz = Fonte("Amostra de voz", raiz, raiz.position + Vector3.up * 1.1f, true);
+            fonteVoz.spatialBlend = 0.6f;
+            fonteVoz.gameObject.AddComponent<GanhoVoz>();
+            var fonteEfeito = Fonte("Amostra de efeito", raiz, raiz.position + Vector3.up * 1.1f, true);
+            var amostra = AssetDatabase.LoadAssetAtPath<AudioClip>($"{Roteiro.PastaVozes}/Cena0_Abertura/ola.ogg");
+
+            raiz.gameObject.AddComponent<PainelVolume>().ConfigurarNoEditor(vozes.menos, vozes.mais, efeitos.menos, efeitos.mais,
+                vozes.barra, efeitos.barra, vozes.valor, efeitos.valor, aceso, apagado, fonteVoz, fonteEfeito, amostra);
+            return raiz.gameObject;
+        }
+
+        /// <summary>Botão redondo do painel de volume: tampa de 11 cm, área de toque de 15 cm.</summary>
+        static PokeTrigger BotaoVolume(string nome, Transform tampo, Vector3 posicao, string sinal, Color cor)
+        {
+            var alvo = new GameObject(nome).transform;
+            alvo.SetParent(tampo, false);
+            alvo.localPosition = posicao;
+            var tampa = Bloco("Tampa", alvo, new Vector3(0f, 0f, -0.01f), new Vector3(0.11f, 0.012f, 0.11f),
+                Opaco("Volume" + sinal, cor, cor * 0.3f), PrimitiveType.Cylinder, new Vector3(90f, 0f, 0f));
+            var rotulo = Texto("Sinal", alvo, new Vector3(0f, 0.005f, -0.025f), sinal, 0.09f, 0.12f, Color.white);
+            rotulo.fontStyle = FontStyles.Bold;
+            var colisor = alvo.gameObject.AddComponent<BoxCollider>();
+            colisor.size = new Vector3(0.15f, 0.15f, 0.08f);
+            colisor.center = new Vector3(0f, 0f, -0.02f);
+            var poke = alvo.gameObject.AddComponent<PokeTrigger>();
+            poke.ConfigurarNoEditor(new[] { tampa.GetComponent<Renderer>() }, new Color(0.6f, 1f, 0.7f), false);
+            return poke;
         }
 
         /// <summary>Sala de blocos do tamanho da área livre, usada só sem o pacote do Sebraelab.</summary>

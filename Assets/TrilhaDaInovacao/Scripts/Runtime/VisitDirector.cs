@@ -108,9 +108,15 @@ namespace TrilhaDaInovacao
                 if (int.TryParse(XRStartup.ValorDoArgumento("-visitas"), out var n)) visitasQA = Mathf.Max(1, n);
             }
 
-            Abafar(efeitos);
+            // Sons do próprio Bootstrap (portal, túnel, botões) e a voz do guia.
+            AbafarEfeitos(gameObject.scene);
 
-            if (XRStartup.XRAtivo) operador.CarregarCalibracao();
+            if (XRStartup.XRAtivo)
+            {
+                operador.CarregarCalibracao();
+                // No VR o corpo não pode ser empurrado: a visão escurece dentro de um móvel.
+                Cabeca.gameObject.AddComponent<CabecaNoCenario>().Configurar(fader);
+            }
             else desktop.Ativar();
 
             visita = StartCoroutine(Laco());
@@ -133,7 +139,10 @@ namespace TrilhaDaInovacao
 
             foreach (var raiz in cena.GetRootGameObjects())
             foreach (var fonte in raiz.GetComponentsInChildren<AudioSource>(true))
-                if (!vozes.Contains(fonte)) Abafar(fonte);
+                if (!vozes.Contains(fonte) && fonte.GetComponent<GanhoVoz>() == null) Abafar(fonte);
+
+            foreach (var voz in vozes)
+                if (voz != null && voz.GetComponent<GanhoVoz>() == null) voz.gameObject.AddComponent<GanhoVoz>();
         }
 
         static void Abafar(AudioSource fonte)
@@ -414,6 +423,8 @@ namespace TrilhaDaInovacao
                     SceneManager.SetActiveScene(cena);
                     DynamicGI.UpdateEnvironment();
                     AbafarEfeitos(cena);
+                    // O cenário novo pode ter um móvel bem onde o visitante está.
+                    if (!XRStartup.XRAtivo) desktop.Desentalar();
                     cenaCarregada = nova;
                 }
             }

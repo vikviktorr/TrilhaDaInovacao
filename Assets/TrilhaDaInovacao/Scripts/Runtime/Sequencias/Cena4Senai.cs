@@ -6,10 +6,13 @@ namespace TrilhaDaInovacao
     /// <summary>Cena 4 — 2018, Laboratório Aberto do SENAI (2:10–2:45).</summary>
     public class Cena4Senai : EraSequence
     {
-        public PokeTrigger lampada;
-        public Pulsar brilhoLampada;
+        [Tooltip("Tela do computador do CAD: tocar nela começa o desenho da peça.")]
+        public PokeTrigger telaCad;
+        public Pulsar brilhoTela;
         public LinhaProgressiva desenhoDigital;
         public ImpressaoEmCamadas impressora;
+        [Tooltip("Painel LCD da impressora: como na Ender-3, a impressão começa ali.")]
+        public PokeTrigger painelImpressora;
         public Transform prototipo;
         public AudioSource somImpressora;
         public AudioSource ambiente;
@@ -25,11 +28,11 @@ namespace TrilhaDaInovacao
             desenhoDigital.Esconder();
             impressora.Esconder();
             Mostrar(prototipo.gameObject, false);
-            brilhoLampada.Definir(false);
+            brilhoTela.Definir(false);
 
             yield return Dizer("intro");
-            brilhoLampada.Definir(true);
-            ctx.Enquadrar(lampada.transform.position);
+            brilhoTela.Definir(true);
+            ctx.Enquadrar(telaCad.transform.position);
             yield return Dizer("juntos");
             ctx.Enquadrar(estudante.transform.position + Vector3.up * 0.7f);
             yield return null;
@@ -37,23 +40,26 @@ namespace TrilhaDaInovacao
             yield return null;
             yield return DizerPor(estudante, "estudante");
 
-            yield return EsperarToque(lampada, "dica");
-            brilhoLampada.Definir(false);
+            yield return EsperarToque(telaCad, "dica");
+            brilhoTela.Definir(false);
 
-            var fabricacao = StartCoroutine(Fabricar());
+            ctx.Enquadrar(desenhoDigital.transform.position);
+            var desenho = StartCoroutine(desenhoDigital.Desenhar(2.5f));
             yield return Dizer("ideia");
             yield return DizerPor(pesquisador, "pesquisador");
-            yield return fabricacao;
+            yield return desenho;
+
+            // O visitante dá a ordem de imprimir no próprio painel da impressora.
+            ctx.Enquadrar(painelImpressora.transform.position);
+            yield return EsperarToque(painelImpressora, "dica-impressora");
+            yield return Imprimir();
             yield return DizerPor(empreendedora, "empreendedora");
             ctx.Capturar("2018");
             yield return Dizer("fim");
         }
 
-        IEnumerator Fabricar()
+        IEnumerator Imprimir()
         {
-            ctx.Enquadrar(desenhoDigital.transform.position);
-            yield return desenhoDigital.Desenhar(2.5f);
-
             ctx.Enquadrar(impressora.transform.position);
             Cena1Telma.Tocar(somImpressora, "impressora", true, 0.5f);
             yield return impressora.Imprimir(4f);

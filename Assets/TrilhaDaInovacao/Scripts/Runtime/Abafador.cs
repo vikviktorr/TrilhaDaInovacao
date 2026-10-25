@@ -6,7 +6,8 @@ namespace TrilhaDaInovacao
     /// Abaixa um som de efeito ou ambiente enquanto alguém fala (ducking), para
     /// a voz do guia e dos figurantes ficar sempre acima. Atua no sinal do
     /// AudioSource deste objeto, então não briga com o volume que as cenas definem.
-    /// O <see cref="VisitDirector"/> liga e desliga pelo <see cref="Alvo"/>.
+    /// O <see cref="VisitDirector"/> liga e desliga pelo <see cref="Alvo"/>. Também
+    /// aplica o volume de efeitos escolhido pelo visitante (<see cref="ConfigAudio.Efeitos"/>).
     /// </summary>
     [RequireComponent(typeof(AudioSource))]
     public class Abafador : MonoBehaviour
@@ -20,7 +21,7 @@ namespace TrilhaDaInovacao
 
         void OnAudioFilterRead(float[] dados, int canais)
         {
-            var alvo = Alvo;
+            var alvo = Alvo * ConfigAudio.Efeitos;
             for (var i = 0; i < dados.Length; i += canais)
             {
                 ganho += Mathf.Clamp(alvo - ganho, -Passo, Passo);

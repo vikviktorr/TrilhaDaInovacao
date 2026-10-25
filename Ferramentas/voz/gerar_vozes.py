@@ -2,9 +2,10 @@
 """Dublagem por IA das falas do roteiro (guia robô e figurantes).
 
 Lê Assets/TrilhaDaInovacao/Roteiro/*.asset, sintetiza cada fala com o Piper
-(TTS neural local, pt-BR) e aplica uma voz robótica "Matrix" pensada para não
-cansar no fone do óculos: grave, metálica e com eco curto, mas sem agudos
-ásperos e com volume normalizado. Saída: Assets/TrilhaDaInovacao/Voz/<roteiro>/<id>.ogg.
+(TTS neural local, pt-BR). O guia ganha uma voz de robô leve (aguda, simpática, com um toque metálico);
+os figurantes ficam com voz humana. Todas passam por uma cadeia de clareza
+(presença, de-esser, compressão suave) e saem com o mesmo volume (-16 LUFS,
+loudnorm em duas passadas), em 48 kHz. Saída: Assets/TrilhaDaInovacao/Voz/<roteiro>/<id>.ogg.
 O construtor de cenas liga cada arquivo ao campo "audio" da fala.
 
     Ferramentas/voz/gerar_vozes.py            # só o que mudou
@@ -12,7 +13,7 @@ O construtor de cenas liga cada arquivo ao campo "audio" da fala.
     Ferramentas/voz/gerar_vozes.py --so Cena4_2018_Senai
 
 Requer o Piper e as vozes pt_BR (faber, cadu, jeff) em ~/.local/opt
-(ou PIPER=/caminho/piper e VOZES=/pasta/das/vozes) e o ffmpeg.
+(ou PIPER=/caminho/piper e VOZES=/pasta/das/vozes) e o ffmpeg (com rubberband).
 """
 import argparse
 import hashlib
@@ -34,16 +35,27 @@ PIPER = Path(os.environ.get("PIPER", Path.home() / ".local/opt/piper/piper"))
 VOZES = Path(os.environ.get("VOZES", Path.home() / ".local/opt/piper-voices"))
 
 # Mudou a cadeia de efeitos? Suba a versão para regerar tudo.
-VERSAO_EFEITO = 1
+VERSAO_EFEITO = 3
+
+# Volume final de todas as falas (EBU R128): -16 LUFS, o usual para fala em
+# celular e fone, e pico real a -1,5 dBTP. O visitante ainda ajusta no painel do hub.
+LUFS, PICO, LRA = -16.0, -1.5, 7.0   # LRA só para a medição
 
 # Personagens: modelo do Piper, ritmo (length_scale > 1 = mais devagar),
-# tom em semitons e intensidade do efeito robótico.
+# tom em semitons, quanto desse tom desloca também os formantes (o timbre)
+# e o efeito robótico. Todas as vozes pt_BR do Piper são masculinas: para as
+# mulheres, o tom sobe 5 semitons mas os formantes só 2 (como numa voz feminina
+# real); subir tudo junto, como antes, dava a voz de "esquilo".
+# ritmo = length_scale do Piper (maior = mais devagar). suave: fala de gente, com menos
+# brilho e compressão mais leve, para soar calma e próxima (os figurantes).
 PERSONAGENS = {
-    "guia": dict(modelo="pt_BR-faber-medium", ritmo=1.08, tom=-2.0, robo="forte"),
-    "estudante": dict(modelo="pt_BR-jeff-medium", ritmo=1.0, tom=4.0, robo="leve"),
-    "pesquisador": dict(modelo="pt_BR-cadu-medium", ritmo=1.02, tom=-1.0, robo="leve"),
-    "empreendedora": dict(modelo="pt_BR-cadu-medium", ritmo=0.98, tom=5.0, robo="leve"),
-    "engenheiro": dict(modelo="pt_BR-jeff-medium", ritmo=1.02, tom=-2.0, robo="leve"),
+    # O robô é um drone pequeno e simpático: voz mais aguda, formantes um pouco mais
+    # claros (soa "menor") e só um toque metálico.
+    "guia": dict(modelo="pt_BR-faber-medium", ritmo=1.02, tom=3.0, formante=1.5, robo=True, suave=False),
+    "estudante": dict(modelo="pt_BR-jeff-medium", ritmo=1.06, tom=4.0, formante=1.5, robo=False, suave=True),
+    "pesquisador": dict(modelo="pt_BR-cadu-medium", ritmo=1.08, tom=-1.0, formante=-0.5, robo=False, suave=True),
+    "empreendedora": dict(modelo="pt_BR-cadu-medium", ritmo=1.05, tom=5.0, formante=2.0, robo=False, suave=True),
+    "engenheiro": dict(modelo="pt_BR-jeff-medium", ritmo=1.08, tom=-1.5, formante=-1.0, robo=False, suave=True),
 }
 
 # Quem diz cada fala que não é do guia: (roteiro, id) -> personagem.
@@ -65,6 +77,8 @@ EM_PARTES = {("Cena6_2023-2025_Alcantara", "contagem")}
 # Pronúncia: só para o áudio; a legenda continua com o texto original.
 PRONUNCIA = [
     (r"\b1 Gbps\b", "1 gigabit por segundo"),
+    (r"\b10 Gbps\b", "dez gigabits por segundo"),
+    (r"\b1\.008\b", "mil e oito"),
     (r"\b3,5 GHz\b", "três vírgula cinco gigahertz"),
     (r"\bHANBIT-TLV\b", "Hanbit tê éle vê"),
     (r"\bHANBIT-Nano\b", "Hanbit Nano"),
@@ -84,41 +98,59 @@ PRONUNCIA = [
 
 
 def cadeia(p):
-    """Filtros do ffmpeg: tom, timbre robótico e cuidados de conforto."""
-    r = 2 ** (p["tom"] / 12)
+    """Filtros do ffmpeg antes do volume final: tom, timbre e cuidados de clareza e conforto."""
     f = [
         # Corta o silêncio que o Piper deixa no começo e no fim.
         "silenceremove=start_periods=1:start_threshold=-50dB",
         "areverse", "silenceremove=start_periods=1:start_threshold=-50dB", "areverse",
-        "highpass=f=90",
-        # Tom (muda também o timbre, o que ajuda a separar os personagens).
-        f"asetrate=22050*{r:.5f}", "aresample=44100", f"atempo={1 / r:.5f}",
+        "highpass=f=80",
+        # Trabalha em 48 kHz com o reamostrador soxr (o padrão do ffmpeg deixa chiado).
+        "aresample=48000:resampler=soxr",
     ]
-    if p["robo"] == "forte":
+    if p["formante"]:
+        # Muda tom e formantes juntos (velocidade), depois devolve a duração.
+        r = 2 ** (p["formante"] / 12)
+        f += [f"asetrate={48000 * r:.1f}", "aresample=48000:resampler=soxr", f"atempo={1 / r:.5f}"]
+    resto = p["tom"] - p["formante"]
+    if resto:
+        # O resto do tom sem mexer nos formantes.
+        f.append(f"rubberband=pitch={2 ** (resto / 12):.5f}:formant=preserved:pitchq=quality")
+    if p["robo"]:
+        # Voz de robô leve e simpática: um só eco curtíssimo (brilho metálico) e um coro
+        # sutil. Ecos e coro fortes embolavam as sílabas e deixavam a voz dura.
+        f += ["aecho=0.9:0.7:3:0.12", "chorus=0.9:0.9:12:0.1:0.3:0.8"]
+    if p["suave"]:
+        # Gente: corpo nos graves, quase nada de presença, agudos arredondados e um
+        # compressor gentil; a fala fica calma sem perder a clareza.
         f += [
-            # Metal: flanger lento + pente de ecos curtíssimos; coro para a "voz digital".
-            "flanger=delay=1.2:depth=1.5:regen=25:width=55:speed=0.25",
-            "aecho=0.85:0.55:6|11:0.28|0.16",
-            "chorus=0.7:0.9:20:0.25:0.3:1.2",
+            "equalizer=f=220:t=q:w=1.2:g=1",
+            "equalizer=f=2800:t=q:w=1.4:g=0.8",
+            "treble=g=-3:f=5500",
+            "deesser=i=0.55",
+            "lowpass=f=9000",
+            "acompressor=threshold=-24dB:ratio=1.8:attack=12:release=200:makeup=1.5",
         ]
     else:
         f += [
-            "aecho=0.9:0.6:6:0.14",
-            "chorus=0.8:0.9:18:0.2:0.25:1.0",
+            # Clareza: menos "embolado" nos médios-graves, presença onde a fala é entendida,
+            # sem chiado de "s" nem agudos ásperos no fone do óculos.
+            "equalizer=f=280:t=q:w=1.2:g=-2",
+            "equalizer=f=2800:t=q:w=1.4:g=2",
+            "treble=g=-1.5:f=7000",
+            "deesser=i=0.45",
+            "lowpass=f=10500",
+            "acompressor=threshold=-22dB:ratio=2.2:attack=8:release=150:makeup=2",
         ]
-    f += [
-        # Conforto: sem chiado nem estridência, corpo nos graves, dinâmica contida.
-        "equalizer=f=3200:t=q:w=1.0:g=-3",
-        "equalizer=f=180:t=q:w=1.0:g=2",
-        "lowpass=f=6500",
-        "acompressor=threshold=-20dB:ratio=3:attack=8:release=150:makeup=2",
-        # Sala pequena, bem discreta.
-        "aecho=0.8:0.35:55|85:0.10|0.06",
-        "apad=pad_dur=0.15",
-        # Volume confortável e igual em todas as falas; pico bem abaixo de 0 dB.
-        "loudnorm=I=-19:TP=-3:LRA=7",
-    ]
+    f.append("apad=pad_dur=0.12")
     return ",".join(f)
+
+
+def medir(arquivo):
+    """1ª passada do loudnorm: mede o volume da fala já processada."""
+    saida = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(arquivo), "-af",
+                            f"loudnorm=I={LUFS}:TP={PICO}:LRA={LRA}:print_format=json", "-f", "null", "-"],
+                           check=True, capture_output=True, text=True).stderr
+    return json.loads(saida[saida.rindex("{"):saida.rindex("}") + 1])
 
 
 def ler_roteiros():
@@ -143,11 +175,19 @@ def gerar(roteiro, id_, texto, personagem, destino):
     modelo = VOZES / f"{p['modelo']}.onnx"
     with tempfile.TemporaryDirectory() as tmp:
         bruto = Path(tmp) / "bruto.wav"
+        tratado = Path(tmp) / "tratado.wav"
         subprocess.run([str(PIPER), "-m", str(modelo), "--length_scale", str(p["ritmo"]), "-f", str(bruto)],
                        input=para_falar(texto).encode("utf-8"), check=True, capture_output=True)
-        destino.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(bruto), "-af", cadeia(p),
-                        "-ac", "1", "-ar", "44100", "-c:a", "libvorbis", "-q:a", "5", str(destino)], check=True)
+                        "-ac", "1", "-c:a", "pcm_f32le", str(tratado)], check=True)
+        # 2ª passada: ganho exato para o mesmo volume em todas as falas (o loudnorm de
+        # uma passada deixava até 3 dB de diferença) e um limitador que segura os picos.
+        m = medir(tratado)
+        ganho = LUFS - float(m["input_i"])
+        volume = f"volume={ganho:.2f}dB,alimiter=limit={10 ** (PICO / 20):.3f}:attack=3:release=60:level=false"
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(tratado), "-af", f"{volume},aresample=48000:resampler=soxr",
+                        "-ac", "1", "-ar", "48000", "-c:a", "libvorbis", "-q:a", "6", str(destino)], check=True)
 
 
 def main():

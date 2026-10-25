@@ -31,9 +31,18 @@ MUNICIPIOS = {
 }
 # Rótulos fora do centroide (lon, lat), para não cair em cima de outro município.
 POSICAO_ROTULO = {"2111300": (-44.29, -2.66), "2109452": (-44.10, -2.43)}
-# Pontos da rede metropolitana na área urbana de São Luís (lon, lat). Os nomes das
-# seis instituições ainda estão pendentes no roteiro, então os pinos vão sem rótulo.
-PONTOS_REDE = [(-44.31, -2.56), (-44.29, -2.525), (-44.25, -2.50), (-44.20, -2.52), (-44.22, -2.585), (-44.28, -2.605)]
+# As seis instituições da Rede Metropolitana de São Luís (Redecomep/RNP, em operação
+# desde 23/10/2009, 43 km de fibra a 10 Gbit/s; IFMA, 2009), em (lon, lat) aproximados
+# das sedes. O CLA fica em Alcântara, do outro lado da baía: o pino marca a ponta da
+# ilha de onde a ligação segue para lá.
+PONTOS_REDE = [
+    ("UFMA", (-44.307, -2.556)),      # Cidade Universitária, Bacanga
+    ("IFMA", (-44.287, -2.546)),      # campus Monte Castelo
+    ("UEMA", (-44.209, -2.583)),      # Cidade Universitária Paulo VI
+    ("FAPEMA", (-44.272, -2.500)),
+    ("SEATI", (-44.255, -2.523)),
+    ("CLA", (-44.31, -2.505)),
+]
 
 TOLERANCIA = 0.004          # graus: simplificação do contorno (low poly)
 AREA_MINIMA = 0.0004        # graus²: ilhotas menores que isso ficam de fora
@@ -94,8 +103,8 @@ def uv(x, y):
 
 
 pontos = [{"nome": n, "tipo": "municipio", "u": uv(*c)[0], "v": uv(*c)[1]} for n, c in rotulos]
-pontos += [{"nome": f"Ponto {i + 1}", "tipo": "rede", "u": uv(*projetar(*ll))[0], "v": uv(*projetar(*ll))[1]}
-           for i, ll in enumerate(PONTOS_REDE)]
+pontos += [{"nome": nome, "tipo": "rede", "u": uv(*projetar(*ll))[0], "v": uv(*projetar(*ll))[1]}
+           for nome, ll in PONTOS_REDE]
 
 # Origem no centro do mapa, no nível da mesa.
 cx, cy = (x0 + x1) / 2, (y0 + y1) / 2

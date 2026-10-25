@@ -8,7 +8,8 @@
 # - Eixo Z: o pórtico inteiro sobe pelos montantes, puxado por um fuso no lado esquerdo.
 # - Extrusora Bowden: o motor no montante esquerdo empurra o filamento do carretel,
 #   por um tubo, até o bico quente (~200 °C), que deposita uma camada de cada vez.
-# Objetos exportados: Estrutura (fixa), Mesa (Y), Portico (Z) e Cabecote (X).
+# Objetos exportados: Estrutura (fixa), Painel (LCD e botão, que inicia a impressão),
+# Mesa (Y), Portico (Z) e Cabecote (X).
 # Medidas em metros, Z para cima, frente (painel LCD) para -Y. O bico está em
 # x = 0, y = -0,035 e toca a mesa (primeira camada) na pose exportada.
 import math
@@ -72,11 +73,8 @@ est = [
     caixa("Montante esquerdo", (-X_MONT, Y_MONT, 0.04 + (TOPO - 0.04) / 2), (0.02, 0.04, TOPO - 0.04), PRETO),
     caixa("Montante direito", (X_MONT, Y_MONT, 0.04 + (TOPO - 0.04) / 2), (0.02, 0.04, TOPO - 0.04), PRETO),
     caixa("Barra do topo", (0.0, Y_MONT, TOPO - 0.01), (0.43, 0.02, 0.02), PRETO),
-    # Placa-mãe sob a base (frente esquerda) e caixa do LCD com botão (frente direita).
+    # Placa-mãe sob a base (frente esquerda); o painel do LCD vai num objeto à parte.
     caixa("Caixa da placa", (-0.10, -0.12, 0.012), (0.13, 0.12, 0.024), GRAFITE),
-    caixa("Caixa do LCD", (0.165, -0.215, 0.055), (0.12, 0.05, 0.075), GRAFITE, giro=(math.radians(-18), 0, 0)),
-    caixa("Tela", (0.152, -0.243, 0.062), (0.065, 0.004, 0.04), TELA, giro=(math.radians(-18), 0, 0)),
-    cilindro_em("Botão", (0.200, -0.245, 0.058), 0.009, 0.012, PRETO, seg=8, giro=(math.radians(72), 0, 0)),
     # Fonte de alimentação presa ao montante direito, com a chave vermelha.
     caixa("Fonte", (X_MONT + 0.04, Y_MONT + 0.02, 0.20), (0.05, 0.11, 0.21), CINZA_FONTE),
     caixa("Chave", (X_MONT + 0.066, Y_MONT - 0.01, 0.11), (0.004, 0.015, 0.01), VERMELHO),
@@ -98,6 +96,18 @@ est.append(tubo("Filamento", [(-0.07, Y_MONT, TOPO + 0.08), (-0.16, Y_MONT, TOPO
 fixar(est)
 estrutura = juntar("Estrutura", est)
 facetar(estrutura)
+
+# --- Painel (frente direita): LCD 12864 azul e o botão giratório que também clica ---
+# Na Ender-3 tudo começa por ele: gira para escolher "Print from TF", clica no arquivo
+# e a impressão começa. Objeto separado para o visitante tocar e ele acender.
+painel = [
+    caixa("Caixa do LCD", (0.165, -0.215, 0.055), (0.12, 0.05, 0.075), GRAFITE, giro=(math.radians(-18), 0, 0)),
+    caixa("Tela", (0.152, -0.243, 0.062), (0.065, 0.004, 0.04), TELA, giro=(math.radians(-18), 0, 0)),
+    cilindro_em("Botão", (0.200, -0.245, 0.058), 0.009, 0.012, PRETO, seg=8, giro=(math.radians(72), 0, 0)),
+]
+fixar(painel)
+painel = juntar("Painel", painel)
+facetar(painel)
 
 # --- Mesa (eixo Y) ---------------------------------------------------------------
 mesa = [

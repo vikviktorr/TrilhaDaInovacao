@@ -27,40 +27,40 @@
    "v": 0.8814
   },
   {
-   "nome": "Ponto 1",
+   "nome": "UFMA",
    "tipo": "rede",
-   "u": 0.2914,
-   "v": 0.5944
+   "u": 0.2981,
+   "v": 0.6032
   },
   {
-   "nome": "Ponto 2",
+   "nome": "IFMA",
    "tipo": "rede",
-   "u": 0.3362,
-   "v": 0.6717
+   "u": 0.3429,
+   "v": 0.6253
   },
   {
-   "nome": "Ponto 3",
+   "nome": "UEMA",
    "tipo": "rede",
-   "u": 0.4258,
+   "u": 0.5177,
+   "v": 0.5436
+  },
+  {
+   "nome": "FAPEMA",
+   "tipo": "rede",
+   "u": 0.3765,
    "v": 0.7269
   },
   {
-   "nome": "Ponto 4",
+   "nome": "SEATI",
    "tipo": "rede",
-   "u": 0.5379,
-   "v": 0.6827
+   "u": 0.4146,
+   "v": 0.6761
   },
   {
-   "nome": "Ponto 5",
+   "nome": "CLA",
    "tipo": "rede",
-   "u": 0.4931,
-   "v": 0.5392
-  },
-  {
-   "nome": "Ponto 6",
-   "tipo": "rede",
-   "u": 0.3586,
-   "v": 0.495
+   "u": 0.2914,
+   "v": 0.7158
   }
  ]
 }

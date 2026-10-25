@@ -7,6 +7,8 @@ namespace TrilhaDaInovacao
     /// Véu preso à câmera para as transições: clarão branco na entrada e na
     /// saída do túnel do tempo (<see cref="TunelDoTempo"/>) e fade preto (início
     /// e fim da visita). Em VR não há UI de tela cheia, então o véu é um quad no mundo.
+    /// Também escurece quando a cabeça entra num móvel (<see cref="Obstrucao"/>,
+    /// ligada pelo <see cref="CabecaNoCenario"/>), por cima ou por baixo do fade.
     /// </summary>
     public class ScreenFader : MonoBehaviour
     {
@@ -18,8 +20,22 @@ namespace TrilhaDaInovacao
         Material material;
         Color corAtual = Color.black;
         float opacidade = 1f;
+        float obstrucao;
 
         public float DuracaoFade => duracaoFade;
+
+        /// <summary>Escurecimento extra (0 a 1) com a cabeça dentro do cenário.</summary>
+        public float Obstrucao
+        {
+            get => obstrucao;
+            set
+            {
+                value = Mathf.Clamp01(value);
+                if (Mathf.Approximately(value, obstrucao)) return;
+                obstrucao = value;
+                Aplicar(corAtual, opacidade);
+            }
+        }
 
         void Awake()
         {
@@ -54,13 +70,16 @@ namespace TrilhaDaInovacao
         {
             corAtual = cor;
             opacidade = Mathf.Clamp01(alfa);
+            // O mais opaco vence: o fade da transição ou o preto da obstrução.
+            var mostrada = Mathf.Max(opacidade, obstrucao);
             if (material != null)
             {
-                cor.a = opacidade;
+                if (obstrucao > opacidade) cor = Color.Lerp(cor, Color.black, Mathf.InverseLerp(opacidade, 1f, obstrucao));
+                cor.a = mostrada;
                 material.SetColor(CorBase, cor);
             }
 
-            if (veu != null) veu.enabled = opacidade > 0.001f;
+            if (veu != null) veu.enabled = mostrada > 0.001f;
         }
 
 #if UNITY_EDITOR

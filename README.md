@@ -19,7 +19,7 @@ O projeto da P1 (feira com estandes) continua no histórico do git, na tag `p1-f
 | 1 | 1 | 1986 | Central Trópico-R da TELMA | Tocar o telefone |
 | 2 | 2 | 1994 | Campanha Guará, Alcântara | Ligar o radar no console do operador |
 | 3 | 3 | 2009 | Rede Metropolitana de São Luís (RNP) | Tocar o ponto no mapa |
-| 4 | 4 | 2018 | Laboratório Aberto do SENAI | Tocar a lâmpada |
+| 4 | 4 | 2018 | Laboratório Aberto do SENAI | Tocar a tela do CAD e, depois, o painel da impressora 3D |
 | 5 | 5 | 2022 | 5G em 3,5 GHz | Aproximar-se da torre |
 | 6 | 6 | 2023–2025 | HANBIT-TLV (SISNAV) e HANBIT-Nano (PION-BR2) | Assistir à decolagem |
 | 7 | 6 | — | Encerramento | Retirar o óculos |
@@ -45,6 +45,8 @@ O U cabe entre a parede de ripas, o banco junto ao vidro e a mesa.
 O ponto do modelo que fica no centro do U é `LayoutTrilha.CentroNoSebraelab`. Para usar outra área do Sebraelab, mude só esse valor.
 Quando o visitante chega à primeira marca, o Sebraelab dá lugar às épocas.
 No modo desktop, paredes e móveis de todos os cenários têm colisão (camada `Cenario`): o visitante desliza neles em vez de atravessá-los.
+Se uma troca de cena ou um teleporte deixar o visitante dentro de um móvel, ele vai para o ponto livre mais próximo, sem atravessar paredes (`DesktopRig.Desentalar`), e a QA registra o caso.
+No VR o corpo não pode ser empurrado sem descalibrar a sala: com a cabeça dentro de um móvel, a visão escurece até o visitante sair (`CabecaNoCenario`).
 
 ```
  z  ┌──────────────────────────────────────┐
@@ -91,6 +93,7 @@ Assim dá para gerar tudo por código e mudar o roteiro sem tocar em assets bin�
 | --- | --- | --- |
 | Sebraelab (pacote `SebraeLabUnityAssets.unitypackage`, da equipe) | Próprio | Importado em `Assets/Sebraelab3D`. O hub usa `SM_Combined.fbx`; sem o pacote, o construtor volta a uma réplica de blocos |
 | [Kenney](https://kenney.nl/assets/category:3D): Furniture, Space, Nature, City Commercial, Factory, Mini Characters | CC0 (domínio público) | `Ferramentas/baixar-modelos.sh` baixa e copia só os FBX usados |
+| Próprios, feitos no Blender (`Ferramentas/blender/`): robô guia, figurantes, telefone, rádio, drone, radar e outros | Próprio | Scripts Python que exportam FBX + paleta para `Assets/TrilhaDaInovacao/Modelos/` |
 | Sketchfab, TurboSquid, Fab | Varia por modelo (CC-BY exige crédito) | Exigem login; ver "Pendências" |
 
 Os objetos históricos específicos (bastidores Trópico-R, telefones, HANBIT, SISNAV, torre 5G) continuam modelados no código, como pede a lista de assets do documento.
@@ -134,6 +137,8 @@ No Linux com placa Intel, abra o editor com `-force-vulkan` (Unity Hub → **⋮
 | Monitor | Pular cena | Segurar **B** por 1 s (ou **N**) |
 | Monitor | Reiniciar visita | Segurar **Y** por 3 s (ou **R**) |
 | PC sem óculos (`-desktop`) | Andar / olhar / tocar | WASD · botão direito ou Tab · clique |
+| Visitante (hub) | Volume das vozes e dos efeitos | Painel **VOLUME** à esquerda da marca INÍCIO (botões − e +). Fica salvo |
+| PC sem óculos | Volume das vozes / dos efeitos | − e = / [ e ] |
 
 O jogo abre em VR quando acha um runtime OpenXR (Quest Link, SteamVR, ALVR, Monado). Sem runtime, abre em modo desktop.
 

@@ -6,12 +6,13 @@ namespace TrilhaDaInovacao.EditorTools
     /// <summary>
     /// Importação das vozes geradas (Ferramentas/voz/gerar_vozes.py): mono,
     /// Vorbis comprimido na memória e carregado em segundo plano, para os
-    /// ~4 min de falas pesarem pouco no Quest 2.
+    /// ~4 min de falas pesarem pouco no Quest 2. Qualidade 0,8: abaixo disso o Vorbis
+    /// deixa chiado nos "s" da fala sintetizada.
     /// </summary>
     public class ImportadorVozes : AssetPostprocessor
     {
         // Mudou a regra de importação? Suba a versão para o Unity reimportar.
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         void OnPreprocessAudio()
         {
@@ -24,7 +25,7 @@ namespace TrilhaDaInovacao.EditorTools
             {
                 loadType = AudioClipLoadType.CompressedInMemory,
                 compressionFormat = AudioCompressionFormat.Vorbis,
-                quality = 0.6f,
+                quality = 0.8f,
                 sampleRateSetting = AudioSampleRateSetting.PreserveSampleRate,
                 preloadAudioData = true
             };

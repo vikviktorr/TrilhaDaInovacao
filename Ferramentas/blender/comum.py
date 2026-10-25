@@ -297,6 +297,8 @@ def previa(rotulo, arquivo, camera, alvo, lente=50, orto=None):
     cena.display.shading.color_type = "TEXTURE"
     cena.display.shading.show_specular_highlight = True
     cena.display.shading.show_cavity = True
+    # Como no Unity: face de trás não aparece, então cascas abertas ou viradas viram buracos aqui também.
+    cena.display.shading.show_backface_culling = True
     cena.display.shading.background_type = "VIEWPORT"
     cena.display.shading.background_color = (0.85, 0.85, 0.85)
     cena.render.film_transparent = False

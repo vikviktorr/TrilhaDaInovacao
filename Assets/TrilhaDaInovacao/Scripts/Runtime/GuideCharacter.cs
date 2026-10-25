@@ -3,8 +3,9 @@ using UnityEngine;
 namespace TrilhaDaInovacao
 {
     /// <summary>
-    /// O guia que acompanha a visita. No whitebox é feito de primitivas: flutua
-    /// de leve, vira para o visitante e "fala" pulsando a cabeça e a luz do peito.
+    /// O guia que acompanha a visita: o robô de Ferramentas/blender/robo_guia.py
+    /// (ou, sem o modelo, um de primitivas). Flutua de leve, vira para o visitante
+    /// e "fala" pulsando a cabeça e acendendo as lentes.
     /// Troca de lugar a cada cena (aparece ao lado da marca, nunca no caminho).
     /// </summary>
     [RequireComponent(typeof(AudioSource))]
@@ -31,8 +32,11 @@ namespace TrilhaDaInovacao
         {
             voz = GetComponent<AudioSource>();
             voz.playOnAwake = false;
-            voz.spatialBlend = 0.8f;
-            voz.minDistance = 1.5f;
+            // Volume cheio até 3 m (o guia fica a 1–2,5 m) e só em parte 3D: dá para saber
+            // de onde vem a voz sem ela ficar baixa quando o visitante se afasta para explorar.
+            voz.spatialBlend = 0.7f;
+            voz.minDistance = 3f;
+            voz.maxDistance = 15f;
             if (cabeca != null) cabecaEscalaBase = cabeca.localScale;
             if (corpo != null) alturaBase = corpo.localPosition.y;
             if (luzPeito != null)
