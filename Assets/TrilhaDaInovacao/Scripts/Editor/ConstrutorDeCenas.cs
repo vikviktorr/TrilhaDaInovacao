@@ -86,12 +86,18 @@ namespace TrilhaDaInovacao.EditorTools
             fader.ConfigurarNoEditor(veu.GetComponent<Renderer>());
             var tunel = MontarTunel(fader);
 
-            // Legenda que segue o olhar.
+            // Legenda que segue o olhar. Fundo e texto são desenhados por cima de
+            // tudo (ZTest Always), senão um painel ou móvel no caminho tampa a fala.
             var legendaGo = new GameObject("Legenda");
+            var materialFundo = ObterMaterial("LegendaFundo", "TrilhaDaInovacao/LegendaFundo");
+            materialFundo.SetColor("_BaseColor", new Color(0.03f, 0.05f, 0.09f, 0.9f));
+            materialFundo.renderQueue = (int)RenderQueue.Overlay;
+            EditorUtility.SetDirty(materialFundo);
             var fundo = Bloco("Fundo", legendaGo.transform, new Vector3(0f, 0f, 0.01f), new Vector3(1.45f, 0.24f, 1f),
-                Transparente("LegendaFundo", new Color(0.03f, 0.05f, 0.09f, 0.78f), true), PrimitiveType.Quad);
+                materialFundo, PrimitiveType.Quad);
             var textoLegenda = Texto("Texto", legendaGo.transform, Vector3.zero, "", 0.058f, 1.35f, Color.white);
             textoLegenda.rectTransform.sizeDelta = new Vector2(1.35f, 0.22f);
+            textoLegenda.fontSharedMaterial = MaterialTextoPorCima(textoLegenda.font);
             var legenda = legendaGo.AddComponent<SubtitleController>();
             legenda.ConfigurarNoEditor(textoLegenda, fundo);
 
@@ -971,6 +977,18 @@ namespace TrilhaDaInovacao.EditorTools
             }
 
             m.SetFloat("_Cull", (float)CullMode.Off);
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
+        /// <summary>Material da fonte com o shader Overlay do TMP, desenhado depois do fundo da legenda.</summary>
+        static Material MaterialTextoPorCima(TMP_FontAsset fonte)
+        {
+            const string nome = "LegendaTexto";
+            if (materiais.TryGetValue(nome, out var pronto)) return pronto;
+            var m = ObterMaterial(nome, "TextMeshPro/Mobile/Distance Field Overlay");
+            m.CopyPropertiesFromMaterial(fonte.material);
+            m.renderQueue = (int)RenderQueue.Overlay + 1;
             EditorUtility.SetDirty(m);
             return m;
         }

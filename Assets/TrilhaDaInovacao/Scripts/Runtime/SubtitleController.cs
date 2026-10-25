@@ -21,8 +21,23 @@ namespace TrilhaDaInovacao
         Transform cabeca;
         Vector3 direcaoAlvo = Vector3.forward;
         bool visivel;
+        bool seguirInclinacao;
 
         public bool Visivel => visivel;
+
+        /// <summary>
+        /// Também acompanha a inclinação da cabeça, para quando o visitante olha
+        /// para o céu (decolagem). Ao desligar, a legenda volta para a altura normal.
+        /// </summary>
+        public bool SeguirInclinacao
+        {
+            get => seguirInclinacao;
+            set
+            {
+                seguirInclinacao = value;
+                if (!value) direcaoAlvo = Plana(direcaoAlvo);
+            }
+        }
 
         void Awake() => Definir(string.Empty);
 
@@ -37,17 +52,20 @@ namespace TrilhaDaInovacao
                 Posicionar(1f);
             }
 
-            var olhar = Plana(cabeca.forward);
-            if (Vector3.Angle(olhar, direcaoAlvo) > limiteAngulo) direcaoAlvo = olhar;
+            var olhar = seguirInclinacao ? cabeca.forward : Plana(cabeca.forward);
+            // Olhando para cima, 25° já tiram a legenda do campo de visão.
+            var limite = seguirInclinacao ? limiteAngulo * 0.4f : limiteAngulo;
+            if (Vector3.Angle(olhar, direcaoAlvo) > limite) direcaoAlvo = olhar;
             Posicionar(1f - Mathf.Exp(-suavidade * Time.deltaTime));
         }
 
         void Posicionar(float fator)
         {
-            var alvo = cabeca.position + direcaoAlvo * distancia + Vector3.down * abaixoDosOlhos;
+            var baixo = seguirInclinacao ? Quaternion.LookRotation(direcaoAlvo) * Vector3.down : Vector3.down;
+            var alvo = cabeca.position + direcaoAlvo * distancia + baixo * abaixoDosOlhos;
             transform.position = Vector3.Lerp(transform.position, alvo, fator);
             var paraFora = transform.position - cabeca.position;
-            paraFora.y = 0f;
+            if (!seguirInclinacao) paraFora.y = 0f;
             if (paraFora.sqrMagnitude > 0.0001f)
                 transform.rotation = Quaternion.LookRotation(paraFora.normalized, Vector3.up);
         }

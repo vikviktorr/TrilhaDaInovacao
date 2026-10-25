@@ -51,6 +51,9 @@ namespace TrilhaDaInovacao
             yield return ctx.Fader.Abrir();
 
             Mostrar(avisoReconstituicao, true);
+            // Da apresentação do foguete até a explosão o visitante olha para o
+            // alto; a legenda sobe junto para a contagem e a anomalia não sumirem.
+            ctx.Legenda.SeguirInclinacao = true;
             ctx.Enquadrar(decolagem.foguete.position + Vector3.up * 11f);
             yield return Dizer("intro2025");
 
@@ -84,6 +87,7 @@ namespace TrilhaDaInovacao
             ctx.Capturar("2025-explosao");
             yield return voo;
             ctx.Enquadrar(decolagem.PontoDaExplosao);
+            ctx.Legenda.SeguirInclinacao = false;
 
             yield return Dizer("resultado");
             ctx.Enquadrar(engenheiro != null ? engenheiro.transform.position + Vector3.up * 1.6f : painelResultado.position);

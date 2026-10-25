@@ -191,6 +191,7 @@ namespace TrilhaDaInovacao
 
             guia.Falando = false;
             legenda.Ocultar();
+            legenda.SeguirInclinacao = false;
             portal.Esconder();
             tunel.Esconder();
             HandPoints.PontoSimulado = null;
@@ -205,6 +206,7 @@ namespace TrilhaDaInovacao
             pularSolicitado = false;
             fader.FecharImediato(Color.black);
             legenda.Ocultar();
+            legenda.SeguirInclinacao = false;
             guia.Esconder();
             foreach (var marca in marcas) marca.Definir(EstadoMarca.Apagada);
             MostrarTrilha(-1);
@@ -403,6 +405,7 @@ namespace TrilhaDaInovacao
             else yield return fader.Fechar(Color.black);
 
             legenda.Ocultar();
+            legenda.SeguirInclinacao = false;
             guia.Falando = false;
             guia.Esconder();
 
