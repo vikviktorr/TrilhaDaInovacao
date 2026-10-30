@@ -87,7 +87,28 @@ namespace TrilhaDaInovacao
                 yield break;
             }
 
-            yield return gerente.InitializeLoader();
+            // O InitializeLoader não captura exceções: se a biblioteca nativa do
+            // OpenXR falhar ao carregar (DllNotFoundException no Windows, por
+            // antivírus, CPU ARM ou runtime do Visual C++ ausente), a exceção
+            // derrubava a corrotina e a tela ficava preta. Cai no modo desktop.
+            var passos = gerente.InitializeLoader();
+            while (true)
+            {
+                object passo;
+                try
+                {
+                    if (!passos.MoveNext()) break;
+                    passo = passos.Current;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[Trilha da Inovação] O OpenXR falhou ao iniciar: {e.GetType().Name}: {e.Message}");
+                    Concluir(false, "falha ao carregar o OpenXR");
+                    yield break;
+                }
+
+                yield return passo;
+            }
 
             if (gerente.activeLoader == null)
             {
