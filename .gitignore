@@ -45,3 +45,6 @@ Thumbs.db
 
 # Python
 __pycache__/
+
+# Clone aninhado por engano (o Unity Hub o lista como um segundo projeto)
+/TrilhaDaInovacao/
