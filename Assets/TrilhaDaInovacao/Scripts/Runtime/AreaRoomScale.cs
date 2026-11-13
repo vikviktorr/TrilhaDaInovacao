@@ -4,8 +4,9 @@ namespace TrilhaDaInovacao
 {
     /// <summary>
     /// Representa, em escala 1:1, a área livre do Sebraelab (ver LayoutTrilha).
-    /// A locomoção é o caminhar real do usuário — não há teleporte — então
-    /// todo estande precisa caber dentro deste retângulo e o Guardian do
+    /// A locomoção principal é o caminhar real do usuário — não há teleporte;
+    /// o analógico dos controles (<see cref="LocomocaoJoystick"/>) é um extra —
+    /// então todo estande precisa caber dentro deste retângulo e o Guardian do
     /// Quest 2 deve ser configurado com o mesmo perímetro.
     /// </summary>
     [ExecuteAlways]

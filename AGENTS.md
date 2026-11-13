@@ -121,6 +121,8 @@ adb shell am start -n com.fofuchosgames.trilhadainovacao/com.unity3d.player.Unit
 
 - A visita é feita a pé: o visitante anda entre 7 marcas no chão, num U de cerca de 4,2 × 1,75 m.
   As medidas estão em `LayoutTrilha.Marcas`.
+- Com os controles, o visitante também se move sem sair do lugar (`LocomocaoJoystick`):
+  o analógico esquerdo anda na direção do olhar e o direito gira o corpo em passos de 30°.
 - Configure o limite (Guardian) em **escala de ambiente**, cobrindo esse espaço.
 - **Calibrar o piso:** com o app aberto, fique de pé na marca INÍCIO, olhando para dentro do U, e segure o botão **A** do controle por 2 s.
   A calibração fica salva.

@@ -176,8 +176,11 @@ namespace TrilhaDaInovacao
             if (mouse.leftButton.wasPressedThisFrame) Tocar(mouse);
         }
 
-        /// <summary>Move o corpo; ao bater no cenário, desliza ao longo da superfície.</summary>
-        void Andar(Vector3 deslocamento)
+        /// <summary>
+        /// Move o corpo; ao bater no cenário, desliza ao longo da superfície.
+        /// Também usado no VR pela <see cref="LocomocaoJoystick"/>.
+        /// </summary>
+        public void Andar(Vector3 deslocamento)
         {
             const int mascara = MascaraCenario;
             for (var i = 0; i < 3 && deslocamento.sqrMagnitude > 1e-8f; i++)

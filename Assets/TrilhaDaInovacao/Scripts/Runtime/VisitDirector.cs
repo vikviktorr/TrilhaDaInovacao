@@ -116,6 +116,8 @@ namespace TrilhaDaInovacao
                 operador.CarregarCalibracao();
                 // No VR o corpo não pode ser empurrado: a visão escurece dentro de um móvel.
                 Cabeca.gameObject.AddComponent<CabecaNoCenario>().Configurar(fader);
+                // Analógicos dos controles: o esquerdo anda, o direito gira.
+                desktop.gameObject.AddComponent<LocomocaoJoystick>().Configurar(desktop, Cabeca);
             }
             else desktop.Ativar();
 
