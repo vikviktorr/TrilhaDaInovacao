@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation;
 using UnityEngine.XR.Management;
 
 namespace TrilhaDaInovacao
@@ -9,11 +11,28 @@ namespace TrilhaDaInovacao
     /// Decide entre VR e modo desktop. No Quest o OpenXR já inicia sozinho.
     /// No PC a inicialização é manual: se não houver runtime OpenXR (ou com
     /// o argumento -desktop), a visita roda com teclado e mouse.
+    /// No editor, com o simulador ligado, o XR Interaction Simulator faz o papel do óculos.
     /// </summary>
     public static class XRStartup
     {
         public static bool XRAtivo { get; private set; }
         public static bool Pronto { get; private set; }
+
+        /// <summary>VR simulado no editor: teclado e mouse movem a cabeça, os controles e as mãos.</summary>
+        public static bool Simulado { get; private set; }
+
+        public const string ChaveSimulador = "TrilhaDaInovacao.SimularVR";
+        const string PrefabSimulador = "Assets/Samples/XR Interaction Toolkit/3.6.1/XR Interaction Simulator/XR Interaction Simulator.prefab";
+        const float AlturaOlhosSimulada = 1.6f;
+
+#if UNITY_EDITOR
+        /// <summary>Ligado por padrão no Linux, onde o OpenXR não roda; nos outros, só pelo menu.</summary>
+        public static bool SimuladorLigado
+        {
+            get => UnityEditor.EditorPrefs.GetBool(ChaveSimulador, Application.platform == RuntimePlatform.LinuxEditor);
+            set => UnityEditor.EditorPrefs.SetBool(ChaveSimulador, value);
+        }
+#endif
 
         static string[] argumentos;
 
@@ -59,6 +78,15 @@ namespace TrilhaDaInovacao
 
         public static IEnumerator Inicializar()
         {
+#if UNITY_EDITOR
+            if (SimuladorLigado && IniciarSimulador())
+            {
+                Simulado = true;
+                Concluir(true, "XR Interaction Simulator");
+                yield break;
+            }
+#endif
+
             var gerente = XRGeneralSettings.Instance != null ? XRGeneralSettings.Instance.Manager : null;
 
             if (gerente == null)
@@ -119,6 +147,33 @@ namespace TrilhaDaInovacao
             gerente.StartSubsystems();
             Concluir(true, gerente.activeLoader.name);
         }
+
+#if UNITY_EDITOR
+        static bool IniciarSimulador()
+        {
+            if (XRInteractionSimulator.instance == null)
+            {
+                var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(PrefabSimulador);
+                if (prefab == null)
+                {
+                    Debug.LogWarning($"[Trilha da Inovação] Simulador de VR não encontrado em {PrefabSimulador}.");
+                    return false;
+                }
+
+                var simulador = UnityEngine.Object.Instantiate(prefab);
+                simulador.name = prefab.name;
+                UnityEngine.Object.DontDestroyOnLoad(simulador);
+            }
+
+            // O óculos simulado começa com a cabeça na origem do rastreamento, que no
+            // room-scale é o chão: o Camera Offset sobe os olhos para a altura de um adulto.
+            var origem = UnityEngine.Object.FindAnyObjectByType<XROrigin>();
+            if (origem != null && origem.CameraFloorOffsetObject != null)
+                origem.CameraFloorOffsetObject.transform.localPosition = Vector3.up * AlturaOlhosSimulada;
+
+            return true;
+        }
+#endif
 
         public static void Encerrar()
         {

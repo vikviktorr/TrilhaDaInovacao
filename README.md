@@ -141,6 +141,7 @@ No Linux com placa Intel, abra o editor com `-force-vulkan` (Unity Hub → **⋮
 | PC sem óculos | Volume das vozes / dos efeitos | − e = / [ e ] |
 
 O jogo abre em VR quando acha um runtime OpenXR (Quest Link, SteamVR, ALVR, Monado). Sem runtime, abre em modo desktop.
+No editor do Linux, o **Play** abre em VR simulado (XR Interaction Simulator); veja os comandos em [`AGENTS.md`](AGENTS.md#rodar-do-jeito-padrão-no-unity-editor).
 
 ## Testes da metodologia
 

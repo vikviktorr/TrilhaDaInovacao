@@ -53,8 +53,12 @@ namespace TrilhaDaInovacao
             if (teclado != null && !diretor.QA)
             {
                 if (teclado.nKey.wasPressedThisFrame) diretor.Pular();
-                if (teclado.rKey.wasPressedThisFrame) diretor.Reiniciar();
-                if (teclado.cKey.wasPressedThisFrame && XRStartup.XRAtivo) Calibrar();
+                // No VR simulado, R e C são do simulador (resetar a pose e travar o eixo Y).
+                if (!XRStartup.Simulado)
+                {
+                    if (teclado.rKey.wasPressedThisFrame) diretor.Reiniciar();
+                    if (teclado.cKey.wasPressedThisFrame && XRStartup.XRAtivo) Calibrar();
+                }
             }
 
             if (Segurou(botaoA, ref seguraA, 2f)) Calibrar();

@@ -61,6 +61,25 @@ Para instalar no óculos (Modo Desenvolvedor e cabo USB), use `Ferramentas/insta
    | Volume dos efeitos | [ e ] |
    | Calibrar o piso | C |
 
+   No Linux, o **Play** abre em **VR simulado** (XR Interaction Simulator, sample do XRI em `Assets/Samples/`).
+   O `XRStartup` instancia o simulador e o jogo roda como no óculos: room-scale, mãos ou controles, analógicos e botões.
+   O menu **Trilha da Inovação → Simular VR no editor** liga e desliga o simulador (ligado por padrão só no Linux; a escolha fica nas EditorPrefs da máquina).
+   Desligado, o Linux volta ao modo desktop e o Windows tenta o óculos pelo Link.
+
+   | Ação no VR simulado | Comando |
+   | --- | --- |
+   | Mover a cabeça (ou o dispositivo selecionado) | WASD, Q e E (descer e subir) |
+   | Olhar | Segurar o botão direito do mouse e mover |
+   | Alternar entre cabeça, controles e mãos | Tab |
+   | Mexer só no controle ou na mão esquerda / direita | [ / ] |
+   | Analógico do controle (andar e girar com `LocomocaoJoystick`) | 9 e 0 escolhem o alvo do mouse/teclado |
+   | Gesto rápido da mão (apontar, pinçar, agarrar) | ` escolhe, Espaço aplica |
+   | Voltar à pose inicial | R |
+   | Menus do simulador | X e Y |
+   | Pular cena | N |
+
+   No VR simulado, R e C ficam com o simulador; para reiniciar a visita, use o botão Y simulado (3 s).
+
 5. Para gerar os builds pelo editor, use os itens **Trilha da Inovação → 3 · Build Linux / Windows / Quest 2 (APK)**.
 
 Pela linha de comando, com o editor fechado, o equivalente é `Ferramentas/build.sh [linux|windows|quest]`.
@@ -75,7 +94,7 @@ Pela linha de comando, com o editor fechado, o equivalente é `Ferramentas/build
 | Época ou hub sem luz, rig ou interface | As cenas são aditivas e foram abertas sozinhas | Rode sempre a partir de `00_Bootstrap.unity`. |
 | Materiais rosa, modelos faltando ou erros que somem depois | A primeira importação (`Library/` vazia) ainda está rodando | Espere a importação terminar (5 a 20 minutos) e rode **Trilha da Inovação → 0 · Configurar tudo (XR + cenas)**. |
 | Projeto "novo" e lento logo depois de um `git clone` | O clone foi feito dentro da pasta de outro clone e o Hub abriu o aninhado | Abra a pasta do repositório que já tem a `Library/` importada e apague o clone aninhado. |
-| Game view preta no Play e `DllNotFoundException: UnityOpenXR` | O pacote OpenXR não tem biblioteca nativa para Linux; a falha derrubava a corrotina da visita | O `XRStartup` já pula o OpenXR no Linux e entra em modo desktop. VR pelo editor só no Windows (Link). |
+| Game view preta no Play e `DllNotFoundException: UnityOpenXR` | O pacote OpenXR não tem biblioteca nativa para Linux; a falha derrubava a corrotina da visita | O `XRStartup` pula o OpenXR no Linux e usa o VR simulado (ou o modo desktop, com o simulador desligado). VR com óculos pelo editor só no Windows (Link). |
 | Aviso `CS0618 ... k_SettingsKey is obsolete` em `ConfiguradorXR.cs` | API depreciada do XR Plug-in Management 4.7 | Só aviso; não atrapalha. |
 | Pasta vazia `Assets/XR 1` | Criada pelo editor durante a configuração do XR | Pode ignorar; pasta vazia não entra no git. |
 | `GLib-GIO-CRITICAL`, `libxml2.so.16` ou shaders `Terrain/Lit`/`SpeedTree7` "not found" no `Editor.log` | Mensagens normais do Unity com URP no Linux | Pode ignorar. |
@@ -147,6 +166,7 @@ adb pull /sdcard/Android/data/com.fofuchosgames.trilhadainovacao/files/sessoes.c
 ### Alternativa: Quest ligado ao PC (Link)
 
 Pelo Quest Link ou Air Link, no Windows, o build `Builds/Windows/TrilhaDaInovacao.exe` e o **Play** do editor abrem em VR no óculos.
+No editor, deixe **Trilha da Inovação → Simular VR no editor** desmarcado.
 Para isso, o runtime OpenXR ativo tem de ser o da Meta.
 Use esse caminho para iterar rápido.
 A medição de desempenho vale só no APK, rodando no próprio óculos.
